@@ -61,7 +61,11 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
-          force-avd-creation: false
+          # A cached AVD does not exist on a cold runner, so it must be created
+          # here. With force-avd-creation disabled the action can start a broken
+          # AVD and then die with "Timeout waiting for emulator to boot".
+          force-avd-creation: true
+          emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
