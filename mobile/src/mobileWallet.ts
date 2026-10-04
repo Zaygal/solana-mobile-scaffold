@@ -1,5 +1,11 @@
 import {transact} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-import {PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL} from '@solana/web3.js';
+import {
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from '@solana/web3.js';
 import {APP_IDENTITY, CLUSTER} from './config';
 
 const TAG = 'MWASCAFFOLD';
@@ -75,6 +81,47 @@ export async function sendTestTransfer(params: {
       minContextSlot: context.slot,
     });
     console.log(TAG, 'sent', signature);
+    return signature;
+  });
+}
+
+/**
+ * Sign and send an arbitrary instruction set.
+ *
+ * Added rather than replaced: the existing `sendTestTransfer` stays exactly as
+ * it is, because it is the proven path and the devnet commitment transaction
+ * still uses it. This is a sibling for the seal, which is a memo instruction
+ * rather than a transfer.
+ *
+ * The same two traps are handled here as in the transfer path: a stale
+ * blockhash while the approval sheet is open (hence `minContextSlot`), and
+ * `signAndSendTransactions` rather than the deprecated signing calls.
+ */
+export async function signAndSendInstructions(params: {
+  connection: {
+    getLatestBlockhash: (
+      c?: string,
+    ) => Promise<{context: {slot: number}; value: {blockhash: string; lastValidBlockHeight: number}}>;
+  };
+  fromAddress: string;
+  instructions: TransactionInstruction[];
+}): Promise<string> {
+  const {connection, fromAddress, instructions} = params;
+  const from = new PublicKey(fromAddress);
+
+  const {context, value} = await connection.getLatestBlockhash('confirmed');
+  const transaction = new Transaction({
+    feePayer: from,
+    blockhash: value.blockhash,
+    lastValidBlockHeight: value.lastValidBlockHeight,
+  }).add(...instructions);
+
+  return transact(async wallet => {
+    const [signature] = await wallet.signAndSendTransactions({
+      transactions: [transaction],
+      minContextSlot: context.slot,
+    });
+    console.log(TAG, 'sealed', signature);
     return signature;
   });
 }

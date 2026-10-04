@@ -26,6 +26,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Metro bundles through Babel and does not typecheck, so a type error
+      # ships silently and surfaces as a runtime crash during the demo. This
+      # step is the only thing standing between a typo and a broken recording.
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
