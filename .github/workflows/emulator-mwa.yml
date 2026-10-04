@@ -106,6 +106,12 @@ jobs:
             grep -q "MWASCAFFOLD" /tmp/logcat.txt \
               && echo "OK: app reached its own diagnostics" \
               || { echo "FAIL: no MWASCAFFOLD output; JS may not have started"; exit 1; }
+            # The seal must round-trip inside the shipped bundle, because the
+            # whole submission claim is that app and verifier agree on the
+            # canonical payload. Assert it rather than trusting the build.
+            grep -q "seal-roundtrip OK" /tmp/logcat.txt \
+              && echo "OK: seal payload round-tripped in the shipped bundle" \
+              || { echo "FAIL: seal payload did not round-trip"; exit 1; }
             if grep -q "AndroidRuntime: FATAL" /tmp/logcat.txt; then
               echo "FAIL: native crash detected"; grep -A20 "AndroidRuntime: FATAL" /tmp/logcat.txt; exit 1
             fi

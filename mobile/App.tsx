@@ -6,6 +6,8 @@ import {
 import {Connection} from '@solana/web3.js';
 import {connectWallet, sendTestTransfer} from './src/mobileWallet';
 import {APP_IDENTITY, EXPLORER, RPC_ENDPOINT, TRANSFER_LAMPORTS} from './src/config';
+import {roundIdFor} from './src/round';
+import {encodeSeal, decodeSeal, sealFromOutcome, streakFromSeals} from './src/seal';
 
 type Phase = 'idle' | 'connecting' | 'sending' | 'done' | 'error';
 
@@ -26,6 +28,29 @@ export default function App() {
   useEffect(() => {
     say(`rpc ${RPC_ENDPOINT}`);
     say(`identity ${APP_IDENTITY.name}`);
+
+    // Seal self-check. Runs before any wallet interaction on purpose: the
+    // emulator runner has no funded wallet, so anything gated behind a wallet
+    // tap would never execute in CI. This proves the canonical payload encodes,
+    // decodes and rebuilds a streak inside the shipped bundle - the same
+    // computation the standalone verifier performs - so app and verifier
+    // cannot silently disagree.
+    try {
+      const probe = sealFromOutcome(roundIdFor(new Date()), {
+        peak: 0.42,
+        durationMs: 10_400,
+        source: 'manual',
+      });
+      const encoded = encodeSeal(probe);
+      const decoded = decodeSeal(encoded);
+      const streak = streakFromSeals(decoded ? [decoded] : []);
+      say(`seal "${encoded}"`);
+      say(`seal-roundtrip ${decoded && decoded.roundId === probe.roundId ? 'OK' : 'FAIL'}`);
+      say(`streak-length ${streak.length} latest ${streak.latest}`);
+    } catch (e: any) {
+      say(`seal-error ${e?.message ?? String(e)}`);
+    }
+
     (async () => {
       try {
         setPhase('connecting');
