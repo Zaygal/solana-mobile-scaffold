@@ -1,3 +1,4 @@
+import {Buffer} from 'buffer';
 import {transact} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import {
   Connection,
@@ -67,11 +68,17 @@ export async function sendTestTransfer(params: {
   const {connection, fromAddress, lamports} = params;
   const from = new PublicKey(fromAddress);
 
-  const {context, value} = await connection.getLatestBlockhash('confirmed');
+  // `getLatestBlockhash` returns the unwrapped result, not the raw RPC
+  // envelope. Fetch the slot separately for `minContextSlot`, which keeps the
+  // blockhash valid while the approval sheet is open.
+  const [latest, slot] = await Promise.all([
+    connection.getLatestBlockhash('confirmed'),
+    connection.getSlot('confirmed'),
+  ]);
   const transaction = new Transaction({
     feePayer: from,
-    blockhash: value.blockhash,
-    lastValidBlockHeight: value.lastValidBlockHeight,
+    blockhash: latest.blockhash,
+    lastValidBlockHeight: latest.lastValidBlockHeight,
   }).add(
     SystemProgram.transfer({fromPubkey: from, toPubkey: from, lamports}),
   );
@@ -79,7 +86,7 @@ export async function sendTestTransfer(params: {
   return transact(async wallet => {
     const [signature] = await wallet.signAndSendTransactions({
       transactions: [transaction],
-      minContextSlot: context.slot,
+      minContextSlot: slot,
     });
     console.log(TAG, 'sent', signature);
     return signature;
@@ -106,17 +113,20 @@ export async function signAndSendInstructions(params: {
   const {connection, fromAddress, instructions} = params;
   const from = new PublicKey(fromAddress);
 
-  const {context, value} = await connection.getLatestBlockhash('confirmed');
+  const [latest, slot] = await Promise.all([
+    connection.getLatestBlockhash('confirmed'),
+    connection.getSlot('confirmed'),
+  ]);
   const transaction = new Transaction({
     feePayer: from,
-    blockhash: value.blockhash,
-    lastValidBlockHeight: value.lastValidBlockHeight,
+    blockhash: latest.blockhash,
+    lastValidBlockHeight: latest.lastValidBlockHeight,
   }).add(...instructions);
 
   return transact(async wallet => {
     const [signature] = await wallet.signAndSendTransactions({
       transactions: [transaction],
-      minContextSlot: context.slot,
+      minContextSlot: slot,
     });
     console.log(TAG, 'sealed', signature);
     return signature;

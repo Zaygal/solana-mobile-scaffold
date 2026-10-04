@@ -9,6 +9,7 @@
  * and the memo instructions inside it. It never consults our local state.
  */
 
+import {Buffer} from 'buffer';
 import {Connection, PublicKey} from '@solana/web3.js';
 import {MEMO_PROGRAM_ID, SealRecord, decodeSeal} from './seal';
 

@@ -27,6 +27,7 @@
  * not a burn and not an escrow: nothing here can move a user's funds.
  */
 
+import {Buffer} from 'buffer';
 import {RoundId, ActKind, ActMetrics} from './round';
 
 /** Version tag first so a future format change is detectable, not ambiguous. */

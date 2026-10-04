@@ -18,6 +18,7 @@
  *   it, so the app names it as future work instead of gesturing at it.
  */
 
+import {Buffer} from 'buffer';
 import {Connection, PublicKey, TransactionInstruction} from '@solana/web3.js';
 import {MEMO_PROGRAM_ID, SealRecord, encodeSeal} from './seal';
 import {signAndSendInstructions, sendTestTransfer} from './mobileWallet';
