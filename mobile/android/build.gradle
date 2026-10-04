@@ -5,11 +5,15 @@ plugins {
 }
 
 ext {
-    // Provide compatibility values for native libraries such as react-native-svg
-    // that read Android SDK versions from the root project.
+    // Provide compatibility values for native libraries that read these from the
+    // root project. kotlinVersion is required: libraries such as
+    // react-native-get-random-values resolve their Kotlin Gradle plugin from
+    // this property, and when it is missing the build fails with the opaque
+    // "Could not find org.jetbrains.kotlin:kotlin-gradle-plugin:null".
     compileSdkVersion = 36
     targetSdkVersion = 35
     minSdkVersion = 26
+    kotlinVersion = '2.1.20'
 }
 
 apply plugin: 'com.facebook.react.rootproject'
