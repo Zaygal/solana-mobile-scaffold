@@ -1,5 +1,6 @@
 import {transact} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import {
+  Connection,
   PublicKey,
   Transaction,
   TransactionInstruction,
@@ -59,7 +60,7 @@ export async function connectWallet(): Promise<Authorized> {
  * caused by a blockhash that expired while the approval sheet was open.
  */
 export async function sendTestTransfer(params: {
-  connection: {getLatestBlockhash: (c?: string) => Promise<{context: {slot: number}; value: {blockhash: string; lastValidBlockHeight: number}}>};
+  connection: Connection;
   fromAddress: string;
   lamports: number;
 }): Promise<string> {
@@ -98,11 +99,7 @@ export async function sendTestTransfer(params: {
  * `signAndSendTransactions` rather than the deprecated signing calls.
  */
 export async function signAndSendInstructions(params: {
-  connection: {
-    getLatestBlockhash: (
-      c?: string,
-    ) => Promise<{context: {slot: number}; value: {blockhash: string; lastValidBlockHeight: number}}>;
-  };
+  connection: Connection;
   fromAddress: string;
   instructions: TransactionInstruction[];
 }): Promise<string> {
