@@ -1,4 +1,4 @@
-package com.zaycomm.mobile
+package com.zaygal.scaffold
 
 import android.graphics.Color
 import android.os.Bundle
@@ -9,7 +9,8 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
-    override fun getMainComponentName(): String = "ZaycommMobile"
+    // Must match AppRegistry.registerComponent() in index.js.
+    override fun getMainComponentName(): String = "SolanaMobileScaffold"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

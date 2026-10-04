@@ -5,31 +5,33 @@ plugins {
 }
 
 android {
-    namespace 'com.zaycomm.mobile'
+    namespace 'com.zaygal.scaffold'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.zaycomm.mobile'
+        applicationId 'com.zaygal.scaffold'
         minSdk 26
         targetSdk 35
         versionCode 1
         versionName '0.1.0'
+
+        // An arm64-only APK will NOT install on the x86_64 emulator, which is
+        // the only device available without Seeker hardware. Bundle every ABI
+        // into one APK so a single artifact installs anywhere.
+        ndk {
+            abiFilters 'x86_64', 'arm64-v8a', 'armeabi-v7a'
+        }
     }
 
     buildTypes {
-        // Standalone diagnostic APK: release-like React Native behavior
-        // (bundled JS, no Metro dependency) while remaining installable with
-        // the standard debug signing key. This is for device validation only.
+        // Standalone diagnostic APK: bundled JS, no Metro dependency, still
+        // installable with the debug key. This is the artifact we ship.
         diagnostic {
             initWith release
             signingConfig signingConfigs.debug
             matchingFallbacks = ['release']
         }
     }
-
-    // React Native 0.86's Gradle plugin owns the New Architecture native
-    // integration. Zaycomm currently has no app-owned C++ targets, so do not
-    // override it with a second application CMake entry point.
 }
 
 react {
@@ -37,17 +39,9 @@ react {
 }
 
 dependencies {
-    // React Native 0.86.2 runtime artifacts required by generated sources.
     implementation('com.facebook.react:react-android')
-
     if (hermesEnabled.toBoolean()) {
         implementation('com.facebook.react:hermes-android')
     }
-
-    // ReactActivity extends AppCompatActivity and therefore requires an
-    // AppCompat theme at runtime.
     implementation('androidx.appcompat:appcompat:1.7.0')
 }
-
-// C25.4 debug APK: installable on a physical Android device for BLE validation.
-// Release signing is intentionally left to the eventual distribution pipeline.

@@ -1,23 +1,11 @@
-const path = require('path');
 const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
 
-// Keep the React Native app as Metro's project root so dependencies resolve
-// from mobile/node_modules, while allowing the shared protocol source in the
-// repository-level src/ directory to be bundled.
+// This app is self-contained: Metro's project root is the app itself, so all
+// dependencies resolve from mobile/node_modules and nothing outside the app
+// directory is bundled.
 const projectRoot = __dirname;
-const repoRoot = path.resolve(__dirname, '..');
-const mobileNodeModules = path.resolve(projectRoot, 'node_modules');
-const repoNodeModules = path.resolve(repoRoot, 'node_modules');
 
-const config = {
+module.exports = mergeConfig(getDefaultConfig(projectRoot), {
   projectRoot,
-  watchFolders: [repoRoot],
-  resolver: {
-    // Shared files under repoRoot/src are outside projectRoot, so Metro's
-    // normal hierarchical lookup would not walk into mobile/node_modules.
-    // Explicitly expose the app dependency tree to those shared modules.
-    nodeModulesPaths: [mobileNodeModules, repoNodeModules],
-  },
-};
-
-module.exports = mergeConfig(getDefaultConfig(projectRoot), config);
+  resolver: {nodeModulesPaths: [`${projectRoot}/node_modules`]},
+});
