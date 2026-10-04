@@ -30,6 +30,19 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The emulator refuses to start on a cold runner with the stock disk
+      # budget: "FATAL | Your device does not have enough disk space to run
+      # avd". The stock image carries ~10 GB of toolchains this job never
+      # touches, and Gradle fills the rest before the emulator boots. Free
+      # space here, and print df so the budget is visible in the log.
+      - name: Free disk space for the emulator
+        run: |
+          echo "== disk before =="; df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/share/swift
+          sudo rm -rf /usr/local/lib/android/sdk/ndk/* /usr/local/lib/android/sdk/sources/* 2>/dev/null || true
+          sudo apt-get clean
+          echo "== disk after =="; df -h / | tail -1
+
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
