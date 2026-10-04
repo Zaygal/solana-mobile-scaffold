@@ -1,0 +1,24 @@
+pluginManagement {
+    includeBuild('../node_modules/@react-native/gradle-plugin')
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+
+plugins {
+    id 'com.facebook.react.settings'
+}
+
+// React Native 0.86 requires the autolinking model even when the app also
+// registers its own Zaycomm native package explicitly. This generates the
+// autolinking.json consumed by the New Architecture Gradle task and lets
+// native dependencies such as react-native-svg be wired into the Android build.
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories { google(); mavenCentral() }
+}
+
+rootProject.name = 'ZaycommMobile'
+include ':app'

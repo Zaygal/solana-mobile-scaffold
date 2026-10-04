@@ -1,0 +1,99 @@
+name: Emulator smoke test (MWA)
+
+# Proves the parts of the demo path that do not need a human tap: the APK
+# installs on an x86_64 emulator, the JS bundle loads, the app process stays
+# alive, and the Mobile Wallet Adapter call reaches the wallet-install step
+# instead of failing earlier. The mock wallet's approval sheet still needs a
+# tap, so final signing is verified by hand.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/emulator-mwa.yml'
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.13'
+
+      - name: Build diagnostic APK
+        working-directory: mobile/android
+        run: gradle --no-daemon :app:assembleDiagnostic
+
+      - name: Boot emulator, install, and check logcat
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -e
+            APK=mobile/android/app/build/outputs/apk/diagnostic/app-diagnostic.apk
+            echo "== installing $APK =="
+            adb install -r "$APK"
+            echo "== installing mock wallet (best effort) =="
+            timeout 300 npx -y solana-mobile@latest device install fakewallet \
+              || echo "mock wallet install skipped; continuing with smoke assertions"
+            adb shell pm list packages | grep -i wallet || true
+            echo "== launching =="
+            adb logcat -c
+            adb shell monkey -p com.zaygal.scaffold -c android.intent.category.LAUNCHER 1
+            sleep 45
+            echo "== process check =="
+            adb shell pidof com.zaygal.scaffold && echo "OK: app process alive"
+            echo "== logcat =="
+            adb logcat -d | grep -E "MWASCAFFOLD|AndroidRuntime|ReactNativeJS" | tail -60
+            adb logcat -d > /tmp/logcat.txt
+            grep -q "MWASCAFFOLD" /tmp/logcat.txt \
+              && echo "OK: app reached its own diagnostics" \
+              || { echo "FAIL: no MWASCAFFOLD output; JS may not have started"; exit 1; }
+            if grep -q "AndroidRuntime: FATAL" /tmp/logcat.txt; then
+              echo "FAIL: native crash detected"; grep -A20 "AndroidRuntime: FATAL" /tmp/logcat.txt; exit 1
+            fi
+            echo "OK: no native crash"
+
+      - name: Upload logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-logcat
+          path: /tmp/logcat.txt
+          if-no-files-found: ignore

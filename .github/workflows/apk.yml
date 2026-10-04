@@ -1,0 +1,107 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # The runner image already ships the Android SDK, and
+      # android-actions/setup-android@v3 no longer works because the "tools"
+      # package it bootstraps is unpublished. sdkmanager is not on PATH, so
+      # locate it and skip when the packages are already present.
+      - name: Install Android SDK packages
+        run: |
+          set -e
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          if [ -d "$SDK/platforms/android-36" ] && [ -d "$SDK/build-tools/36.0.0" ]; then
+            echo "Required SDK packages already present."
+            exit 0
+          fi
+          SDKMANAGER="$(find "$SDK" -name sdkmanager -type f 2>/dev/null | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found under $SDK; relying on installed packages."
+            exit 0
+          fi
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          yes | "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.13'
+          cache-provider: basic
+          cache-read-only: false
+          cache-cleanup: on-success
+
+      - name: Build diagnostic APK
+        working-directory: mobile/android
+        env:
+          GRADLE_OPTS: >-
+            -Dorg.gradle.internal.repository.max.retries=5
+            -Dorg.gradle.internal.repository.initial.backoff=2000
+        run: |
+          set -e
+          for attempt in 1 2 3; do
+            echo "Gradle build attempt ${attempt}/3"
+            if gradle --no-daemon --stacktrace :app:assembleDiagnostic; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 20)); fi
+          done
+          exit 1
+
+      # Two gates, both learned the hard way:
+      #  1. the JS bundle must actually be inside the APK, or the app installs
+      #     and shows a red screen;
+      #  2. an x86_64 native library must be present, or the APK refuses to
+      #     install on the emulator we can actually demo on.
+      - name: Verify APK contents
+        working-directory: mobile/android
+        run: |
+          set -e
+          APK="app/build/outputs/apk/diagnostic/app-diagnostic.apk"
+          test -f "$APK"
+          echo "Inspecting $APK ($(du -h "$APK" | cut -f1))"
+          unzip -l "$APK" | grep -Eq 'assets/(index\.android\.bundle|index\.android\.bundle\.packager\.map)$' \
+            || { echo "FAIL: React Native bundle missing from APK"; exit 1; }
+          echo "OK: React Native bundle present"
+          unzip -l "$APK" | grep -Eq 'lib/x86_64/.*\.so$' \
+            || { echo "FAIL: no x86_64 native libraries; this APK will not install on an x86_64 emulator"; exit 1; }
+          echo "OK: x86_64 libraries present"
+          unzip -l "$APK" | grep -Eq 'lib/arm64-v8a/.*\.so$' \
+            || { echo "FAIL: no arm64-v8a libraries; this APK will not install on a real device"; exit 1; }
+          echo "OK: arm64-v8a libraries present"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffold-diagnostic-apk
+          path: mobile/android/app/build/outputs/apk/diagnostic/*.apk
+          if-no-files-found: error
