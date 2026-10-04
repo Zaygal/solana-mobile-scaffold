@@ -5,14 +5,19 @@
  * continue the streak. The design rules it follows, and why:
  *
  *  - It does not open with a wallet. A wallet is plumbing; the round is the
- *    product. Connection state lives at the bottom of the screen as a status
- *    line, never as the thing you are asked to do first.
- *  - It does not show a balance. A balance invites reading this as a wallet app.
- *  - The streak is the largest element, because the streak is what the user is
- *    actually protecting, and the chain is what makes it credible.
- *  - Every limit is printed on the screen that depends on it: devnet, manual
- *    attestation, local cache versus chain record, and the escrow that does not
- *    exist yet. A limitation the user has to discover is a limitation we hid.
+ *    product. Connection state lives in the footer, never as the first ask.
+ *  - It does not show a balance, and it is not a dashboard: sections are
+ *    separated by hairlines rather than boxed into identical cards, so the page
+ *    reads as written rather than assembled.
+ *  - The streak is the largest element and its provenance sits directly under
+ *    it at readable size, because "the streak is verifiable" is the product
+ *    thesis and a thesis set in the faintest type on the screen is a thesis
+ *    inverted.
+ *  - There is exactly one filled control. Everything else is text or an
+ *    outlined action, so the next step is never ambiguous.
+ *  - Every limit is printed on the surface that depends on it: devnet,
+ *    self-reported attestation, cached-versus-chain provenance, and the escrow
+ *    that does not exist yet. A limit the user has to discover is one we hid.
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -68,8 +73,19 @@ function fmtCountdown(ms: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
 }
 
+function fmtDay(roundId: string): string {
+  const [y, m, d] = roundId.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return `${days[dt.getUTCDay()]} ${d} ${months[m - 1]} ${y}`;
+}
+
 function short(addr: string | null): string {
-  if (!addr) return '—';
+  if (!addr) return 'no wallet';
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 }
 
@@ -85,6 +101,7 @@ export default function RoundScreen() {
   const [signaturesByDay, setSignaturesByDay] = useState<Record<string, string>>({});
   const [malformed, setMalformed] = useState<{signature: string; snippet: string}[]>([]);
   const [chainReadAt, setChainReadAt] = useState<string | null>(null);
+  const [scanned, setScanned] = useState(0);
 
   // Local notebook: a cache and today's in-flight attempt. Never evidence.
   const [attempt, setAttempt] = useState<AttemptState | null>(null);
@@ -106,30 +123,28 @@ export default function RoundScreen() {
     return () => clearInterval(t);
   }, []);
 
-  const refreshFromChain = useCallback(
-    async (addr: string) => {
-      const connection = new Connection(RPC_ENDPOINT, 'confirmed');
-      setStatus('reading the chain…');
-      try {
-        const reading = await readSealsFromChain(connection, addr);
-        setChainSeals(reading.seals);
-        setSignaturesByDay(reading.signaturesByDay);
-        setMalformed(reading.malformed);
-        setChainReadAt(new Date().toISOString());
-        setLocalCacheUsed(false);
-        setStatus(`read ${reading.scanned} transactions from devnet`);
-        return reading;
-      } catch (e: any) {
-        // Falling back to the cache is allowed, but it is labelled on screen.
-        // A cached streak presented as the chain's would be the exact
-        // overclaim this product exists to avoid.
-        setLocalCacheUsed(true);
-        setStatus('devnet unreachable — showing this device\'s cached copy');
-        return null;
-      }
-    },
-    [],
-  );
+  const refreshFromChain = useCallback(async (addr: string) => {
+    const connection = new Connection(RPC_ENDPOINT, 'confirmed');
+    setStatus('reading the chain…');
+    try {
+      const reading = await readSealsFromChain(connection, addr);
+      setChainSeals(reading.seals);
+      setSignaturesByDay(reading.signaturesByDay);
+      setMalformed(reading.malformed);
+      setChainReadAt(new Date().toISOString());
+      setScanned(reading.scanned);
+      setLocalCacheUsed(false);
+      setStatus('chain read');
+      return reading;
+    } catch (e: any) {
+      // Falling back to the cache is allowed, but it is labelled on screen.
+      // A cached streak presented as the chain's would be the exact overclaim
+      // this product exists to avoid.
+      setLocalCacheUsed(true);
+      setStatus('devnet unreachable');
+      return null;
+    }
+  }, []);
 
   // Boot: read local state first so the screen paints, then ask the chain.
   useEffect(() => {
@@ -137,6 +152,16 @@ export default function RoundScreen() {
       const persisted = await loadState();
       setAttempt(persisted.attempt ?? null);
       setCommitments(persisted.commitments ?? {});
+
+      // Ask which attestor actually exists on this device and publish that,
+      // rather than assuming. `selectAttestor` reports what it can really do,
+      // and the value it returns travels into the on-chain record.
+      try {
+        const attestor = await selectAttestor();
+        setAttestorSource(attestor.source);
+      } catch {
+        setError('No attestor is available on this device, so no round can be attested.');
+      }
       if (persisted.cache?.seals?.length) {
         setChainSeals(persisted.cache.seals);
         setLocalCacheUsed(true);
@@ -185,10 +210,10 @@ export default function RoundScreen() {
       setAttempt(nextAttempt);
       await persist({commitments: nextCommitments, attempt: nextAttempt});
       setPhase('open');
-      setStatus('round opened — commitment transaction confirmed');
+      setStatus('commitment signed');
     } catch (e: any) {
       setError(e?.message ?? String(e));
-      setStatus('commitment was not signed');
+      setStatus('commitment not signed');
       setPhase('open');
     }
   }, [address, commitments, persist, roundId, attestorSource]);
@@ -197,7 +222,7 @@ export default function RoundScreen() {
   const onHoldStart = useCallback(() => {
     holdStartRef.current = Date.now();
     setPhase('holding');
-    setStatus(`hold for ${ACT_REQUIREMENT.windowMs / 1000}s…`);
+    setStatus('holding…');
   }, []);
 
   const onHoldEnd = useCallback(async () => {
@@ -216,7 +241,7 @@ export default function RoundScreen() {
     const verdict = qualifies(metrics);
     setOutcome(verdict);
     setPhase(verdict.satisfied ? 'qualified' : 'open');
-    setStatus(verdict.reason);
+    setStatus(verdict.satisfied ? 'act qualified' : 'act did not qualify');
   }, [attestorSource]);
 
   const onForgetDevice = useCallback(async () => {
@@ -226,7 +251,7 @@ export default function RoundScreen() {
     setOutcome(null);
     setSealSignature(null);
     if (address) await refreshFromChain(address);
-    setStatus('device copy deleted — streak rebuilt from the chain alone');
+    setStatus('device copy deleted — streak rebuilt from the chain');
   }, [address, refreshFromChain]);
 
   /** Step 4: write the day on-chain. The only irreversible step. */
@@ -247,7 +272,7 @@ export default function RoundScreen() {
       await refreshFromChain(address);
     } catch (e: any) {
       setError(e?.message ?? String(e));
-      setStatus('seal was not signed');
+      setStatus('seal not signed');
       setPhase('qualified');
     }
   }, [address, outcome, persist, refreshFromChain, roundId]);
@@ -276,8 +301,8 @@ export default function RoundScreen() {
 
   const primaryLabel = useMemo(() => {
     if (!address) return 'Connect a wallet to start';
-    if (todaySealed) return "Today is sealed";
-    if (phase === 'committing') return 'Signing commitment…';
+    if (todaySealed) return 'Today is sealed';
+    if (phase === 'committing') return 'Signing the commitment…';
     if (phase === 'sealing') return 'Signing the seal…';
     if (outcome?.satisfied) return 'Seal today on Solana';
     if (attempt) return 'Press and hold to attest';
@@ -291,43 +316,45 @@ export default function RoundScreen() {
     if (!attempt) return onOpenRound();
   }, [address, attempt, onOpenRound, onSeal, outcome, todaySealed]);
 
-  const requirementText = `Hold the button for ${ACT_REQUIREMENT.windowMs / 1000} whole seconds.`;
-  const stateWord = todaySealed
-    ? 'SEALED'
+  // The state as a sentence, because the boundary is information the user acts
+  // on rather than a badge.
+  const stateLine = todaySealed
+    ? 'Sealed. Today is on the record.'
     : outcome?.satisfied
-    ? 'QUALIFIED'
+    ? 'The act qualified. Seal the day to finish the round.'
     : msLeft === 0
-    ? 'MISSED'
-    : 'OPEN';
+    ? 'This round closed without an act.'
+    : `Still open, with ${fmtCountdown(msLeft)} left in the UTC day.`;
+
+  const streakWord = streak.length === 1 ? 'day' : 'days';
+  const provenance = localCacheUsed
+    ? "Read from this device's cached copy. That is a claim, not proof."
+    : `Rebuilt from devnet transaction history — ${scanned} transaction${
+        scanned === 1 ? '' : 's'
+      } read, no local state consulted.`;
 
   return (
     <SafeAreaView style={s.root}>
       <ScrollView contentContainerStyle={s.body}>
-        <Text style={s.kicker}>TODAY'S ROUND · {roundId}</Text>
-        <Text style={s.countdown}>closes in {fmtCountdown(msLeft)}</Text>
+        <Text style={s.dateLine}>{fmtDay(roundId)}</Text>
+        <Text style={s.stateLine}>{stateLine}</Text>
 
-        <Text style={[s.state, todaySealed && s.stateGood]}>{stateWord}</Text>
-
-        <View style={s.card}>
-          <Text style={s.label}>YOUR STREAK</Text>
+        <View style={s.streakBlock}>
           <Text style={s.streak}>{streak.length}</Text>
-          <Text style={s.hint}>
-            {streak.latest ? `most recent sealed day: ${streak.latest}` : 'no sealed days yet'}
+          <Text style={s.streakLabel}>
+            {streakWord} sealed in a row
+            {streak.latest && !todaySealed ? `, most recently ${streak.latest}` : ''}
           </Text>
-          <Text style={[s.provenance, localCacheUsed ? s.prov : s.provGood]}>
-            {localCacheUsed
-              ? 'source: this device\'s cached copy — not proof'
-              : 'source: rebuilt from devnet transaction history'}
-          </Text>
+          <Text style={[s.provenance, localCacheUsed ? s.provBad : s.provGood]}>{provenance}</Text>
         </View>
 
-        <View style={s.card}>
-          <Text style={s.label}>WHAT YOU HAVE TO DO</Text>
-          <Text style={s.value}>{requirementText}</Text>
-          <Text style={s.hint}>
-            A round is one UTC day. The act must happen inside the day it belongs to.
-          </Text>
-        </View>
+        <View style={s.rule} />
+
+        <Text style={s.h}>What you must do</Text>
+        <Text style={s.p}>
+          Hold the button for a full {ACT_REQUIREMENT.windowMs / 1000} seconds. One round is one UTC
+          day, and the act has to fall inside the day it belongs to.
+        </Text>
 
         <Pressable
           style={[s.primary, (!address || todaySealed) && s.primaryOff]}
@@ -341,109 +368,121 @@ export default function RoundScreen() {
           }}>
           <Text style={s.primaryText}>{primaryLabel}</Text>
         </Pressable>
+
         {(phase === 'committing' || phase === 'sealing' || phase === 'loading') && (
-          <ActivityIndicator color="#F5A524" style={{marginTop: 14}} />
+          <ActivityIndicator color="#F5A524" style={s.spinner} />
+        )}
+        {outcome && !outcome.satisfied && !todaySealed && (
+          <Text style={s.reason}>Not qualified yet: {outcome.reason}.</Text>
         )}
 
-        {(phase === 'holding' || (attempt && !outcome?.satisfied && !todaySealed)) && (
-          <Text style={s.holding}>holding… release to judge the attempt</Text>
+        <View style={s.rule} />
+
+        <Text style={s.h}>What happens either way</Text>
+        <Text style={s.p}>
+          A qualifying act seals the day with a signed record on Solana, and that seal cannot be
+          back-dated, edited or restored afterwards — including by us.
+        </Text>
+        <Text style={s.p}>
+          A day without one is simply absent from the record. The streak ends there and the gap
+          stays visible.
+        </Text>
+
+        <View style={s.rule} />
+
+        <Text style={s.h}>What the record proves</Text>
+        <Text style={s.p}>
+          Attestation is self-reported and manual. The on-chain record proves that this wallet
+          signed this claim, at this time, and it declares how the claim was produced. It does not
+          prove the physical act. Motion and camera attestation are not built, and are not
+          approximated.
+        </Text>
+
+        <View style={s.rule} />
+
+        <Text style={s.h}>On Solana, devnet</Text>
+        <View style={s.kv}>
+          <Text style={s.k}>commitment</Text>
+          <Text style={s.v}>
+            {commitments[roundId] ? short(commitments[roundId]) : 'not made for this round'}
+          </Text>
+        </View>
+        <View style={s.kv}>
+          <Text style={s.k}>seal</Text>
+          <Text style={s.v}>
+            {sealSignature
+              ? short(sealSignature)
+              : signaturesByDay[roundId]
+              ? short(signaturesByDay[roundId])
+              : 'none yet today'}
+          </Text>
+        </View>
+        <Text style={s.p}>
+          The commitment is a real signed devnet transaction worth nothing. It is not an escrow:
+          nothing returns it and nothing forfeits it. The seal is the record that matters.
+        </Text>
+        {address && (
+          <Pressable
+            onPress={() =>
+              Linking.openURL(`https://explorer.solana.com/address/${address}?cluster=devnet`)
+            }>
+            <Text style={s.link}>View this wallet on the devnet explorer</Text>
+          </Pressable>
         )}
-        {outcome && !outcome.satisfied && <Text style={s.reason}>not qualified: {outcome.reason}</Text>}
 
-        <View style={s.card}>
-          <Text style={s.label}>WHAT HAPPENS NEXT</Text>
-          <Text style={s.body2}>
-            If the act qualifies, the day is sealed with a signed record on Solana. It cannot be
-            back-dated, edited, or restored later — including by us.
-          </Text>
-          <Text style={s.body2}>
-            If it does not, the day is simply absent from the record. The streak ends there, and the
-            gap stays visible.
-          </Text>
-        </View>
+        <View style={s.rule} />
 
-        <View style={s.card}>
-          <Text style={s.label}>ATTESTATION</Text>
-          <Text style={s.value}>Self-reported / manual attestation</Text>
-          <Text style={s.body2}>
-            The record proves the wallet signed this claim and declares how it was produced. It does
-            not prove the physical act. Motion and camera attestation are named here as not built,
-            not approximated.
-          </Text>
-        </View>
-
-        <View style={s.card}>
-          <Text style={s.label}>ON-CHAIN STATUS · DEVNET</Text>
-          <Text style={s.mono}>round {roundId}</Text>
-          <Text style={s.mono}>commitment tx: {commitments[roundId] ? short(commitments[roundId]) : 'not made'}</Text>
-          <Text style={s.mono}>seal signature: {sealSignature ? short(sealSignature) : signaturesByDay[roundId] ? short(signaturesByDay[roundId]) : 'none yet'}</Text>
-          <Text style={s.mono}>chain read: {chainReadAt ? chainReadAt.slice(11, 19) + 'Z' : '—'}</Text>
-          <Text style={s.hint}>
-            v0 runs on devnet only. The commitment transaction is a real signed transaction whose
-            value is zero, and it is not an escrow — nothing returns it and nothing forfeits it.
-          </Text>
-          {chainReadAt && (
-            <Pressable
-              onPress={() =>
-                Linking.openURL(
-                  `https://explorer.solana.com/address/${address}?cluster=devnet`,
-                )
-              }>
-              <Text style={s.link}>view this wallet on devnet explorer →</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <View style={s.card}>
-          <Text style={s.label}>SEALED DAYS</Text>
-          {withBurns.length === 0 && <Text style={s.hint}>nothing sealed yet</Text>}
-          {withBurns
+        <Text style={s.h}>Sealed days</Text>
+        {withBurns.length === 0 ? (
+          <Text style={s.p}>Nothing sealed yet. Today would be the first.</Text>
+        ) : (
+          withBurns
             .slice()
             .reverse()
             .map(d => (
-              <View key={d.roundId} style={s.row}>
-                <Text style={s.mono}>{d.roundId}</Text>
-                <Text style={s.rowRight}>{d.metrics?.source ?? '—'}</Text>
+              <View key={d.roundId} style={s.kv}>
+                <Text style={s.k}>{d.roundId}</Text>
+                <Text style={s.v}>{d.metrics?.source ?? 'unknown source'}</Text>
               </View>
-            ))}
-          {malformed.length > 0 && (
-            <Text style={s.reason}>
-              {malformed.length} memo(s) carried our prefix but would not decode — shown rather than
-              ignored
-            </Text>
-          )}
-        </View>
-
-        <View style={s.card}>
-          <Text style={s.label}>VERIFY WITHOUT THIS APP</Text>
-          <Text style={s.body2}>
-            The app's claim and the verifier's claim are the same computation. Delete what this
-            device knows and ask the chain instead:
+            ))
+        )}
+        {malformed.length > 0 && (
+          <Text style={s.reason}>
+            {malformed.length} memo{malformed.length === 1 ? '' : 's'} carried our prefix but would
+            not decode. Shown rather than ignored.
           </Text>
-          <Text style={s.mono}>{VERIFIER_COMMAND}</Text>
-          <Pressable style={s.ghost} onPress={onForgetDevice}>
-            <Text style={s.ghostText}>Forget this device's copy and re-read the chain</Text>
-          </Pressable>
-        </View>
+        )}
 
-        <View style={s.card}>
-          <Text style={s.label}>NOT BUILT YET</Text>
-          <Text style={s.body2}>
-            Trustless escrow: a program that holds the stake, returns it when a round qualifies and
-            forfeits it when the day is missed. Returning funds requires program authority, so no
-            version of ordinary transactions can do it. Named here so it is not mistaken for done.
-          </Text>
-        </View>
+        <View style={s.rule} />
+
+        <Text style={s.h}>Verify it without this app</Text>
+        <Text style={s.p}>
+          The app's claim and the verifier's claim are the same computation. Delete what this device
+          knows and ask the chain instead:
+        </Text>
+        <Text style={s.code}>{VERIFIER_COMMAND}</Text>
+        <Pressable style={s.ghost} onPress={onForgetDevice}>
+          <Text style={s.ghostText}>Forget this device's copy and re-read the chain</Text>
+        </Pressable>
+
+        <View style={s.rule} />
+
+        <Text style={s.h}>Not built</Text>
+        <Text style={s.p}>
+          Trustless escrow: a program that holds the stake, returns it when a round qualifies and
+          forfeits it when the day is missed. Returning funds needs program authority, so no
+          arrangement of ordinary transactions can do it. Named here so it is not mistaken for
+          finished.
+        </Text>
 
         {error && (
-          <View style={[s.card, s.badCard]}>
-            <Text style={s.label}>ERROR</Text>
-            <Text style={s.mono}>{error}</Text>
+          <View style={s.errorBlock}>
+            <Text style={s.errorText}>{error}</Text>
           </View>
         )}
 
         <Text style={s.footer}>
-          wallet {short(address)} · {status}
+          Wallet {short(address)} — {status}.
         </Text>
         <Text style={s.footerDim}>{RPC_ENDPOINT}</Text>
       </ScrollView>
@@ -452,53 +491,64 @@ export default function RoundScreen() {
 }
 
 const s = StyleSheet.create({
-  root: {flex: 1, backgroundColor: '#0C0F14'},
-  body: {padding: 20, paddingBottom: 56},
-  kicker: {color: '#8A93A5', fontSize: 11, letterSpacing: 2.6, fontWeight: '700'},
-  countdown: {color: '#5F6675', fontSize: 12, marginTop: 6},
-  state: {color: '#F4F6FA', fontSize: 44, fontWeight: '900', marginTop: 10, letterSpacing: -0.5},
-  stateGood: {color: '#3DD68C'},
-  card: {
-    backgroundColor: '#141A22',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#1E2732',
-  },
-  badCard: {borderColor: '#FF6B6B'},
-  label: {color: '#6E7686', fontSize: 10, letterSpacing: 1.8, fontWeight: '700'},
-  streak: {color: '#F5A524', fontSize: 68, fontWeight: '900', marginTop: 2},
-  value: {color: '#F4F6FA', fontSize: 17, marginTop: 6, fontWeight: '600'},
-  body2: {color: '#B6BFCC', fontSize: 13, marginTop: 8, lineHeight: 20},
-  hint: {color: '#8A93A5', fontSize: 12, marginTop: 8, lineHeight: 18},
-  provenance: {fontSize: 11, marginTop: 10},
-  prov: {color: '#FF6B6B'},
-  provGood: {color: '#3DD68C'},
+  root: {flex: 1, backgroundColor: '#0E0F11'},
+  body: {padding: 22, paddingBottom: 60},
+
+  dateLine: {color: '#8B8F98', fontSize: 14},
+  stateLine: {color: '#EDEFF2', fontSize: 19, fontWeight: '600', marginTop: 8, lineHeight: 26},
+
+  // The streak and its provenance are one unit: the number is the claim, the
+  // line under it is why the claim can be checked.
+  streakBlock: {marginTop: 26},
+  streak: {color: '#F5A524', fontSize: 78, fontWeight: '800', letterSpacing: -2, lineHeight: 82},
+  streakLabel: {color: '#B9BEC7', fontSize: 15, marginTop: 2},
+  provenance: {fontSize: 13, marginTop: 10, lineHeight: 19},
+  provGood: {color: '#57C98A'},
+  provBad: {color: '#E2705F'},
+
+  rule: {height: 1, backgroundColor: '#22252B', marginTop: 26},
+
+  h: {color: '#EDEFF2', fontSize: 15, fontWeight: '700', marginTop: 18},
+  p: {color: '#AEB4BE', fontSize: 14, lineHeight: 21, marginTop: 8},
+
   primary: {
     backgroundColor: '#F5A524',
-    borderRadius: 16,
+    borderRadius: 13,
     padding: 19,
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 20,
   },
-  primaryOff: {opacity: 0.35},
-  primaryText: {color: '#241703', fontWeight: '800', fontSize: 16},
-  holding: {color: '#F5A524', fontSize: 13, marginTop: 12, textAlign: 'center'},
-  reason: {color: '#FF6B6B', fontSize: 12, marginTop: 10},
-  mono: {color: '#C9D2E0', fontSize: 12, marginTop: 6, lineHeight: 18},
-  link: {color: '#F5A524', fontSize: 12, marginTop: 12},
-  row: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 8},
-  rowRight: {color: '#8A93A5', fontSize: 12},
+  primaryOff: {opacity: 0.32},
+  primaryText: {color: '#2A1A02', fontWeight: '800', fontSize: 16},
+  spinner: {marginTop: 14},
+  reason: {color: '#E2705F', fontSize: 13, marginTop: 12, lineHeight: 19},
+
+  kv: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 10},
+  k: {color: '#7E848E', fontSize: 13},
+  v: {color: '#D7DBE1', fontSize: 13, fontVariant: ['tabular-nums']},
+
+  link: {color: '#F5A524', fontSize: 14, marginTop: 14},
+  code: {
+    color: '#D7DBE1',
+    fontSize: 12,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#16181C',
+    borderRadius: 8,
+  },
   ghost: {
     borderWidth: 1,
-    borderColor: '#2A3441',
-    borderRadius: 12,
-    padding: 13,
+    borderColor: '#2C3037',
+    borderRadius: 13,
+    padding: 14,
     alignItems: 'center',
     marginTop: 14,
   },
-  ghostText: {color: '#C9D2E0', fontSize: 13, fontWeight: '600'},
-  footer: {color: '#5F6675', fontSize: 11, marginTop: 22},
-  footerDim: {color: '#3C434F', fontSize: 10, marginTop: 4},
+  ghostText: {color: '#D7DBE1', fontSize: 14, fontWeight: '600'},
+
+  errorBlock: {marginTop: 24, borderLeftWidth: 2, borderLeftColor: '#E2705F', paddingLeft: 12},
+  errorText: {color: '#E2705F', fontSize: 13, lineHeight: 19},
+
+  footer: {color: '#6C7178', fontSize: 12, marginTop: 30},
+  footerDim: {color: '#494E55', fontSize: 11, marginTop: 4},
 });
