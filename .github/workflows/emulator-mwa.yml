@@ -83,9 +83,13 @@ jobs:
           disable-animations: true
           script: |
             set -e
-            APK=mobile/android/app/build/outputs/apk/diagnostic/app-diagnostic.apk
-            echo "== installing $APK =="
-            adb install -r "$APK"
+            # The action executes each script line in its own shell, so a
+            # variable assigned on one line is empty on the next: the install
+            # was running as `adb install -r ""` and dying on "filename doesn't
+            # end .apk". Inline the absolute path instead, and list it first so
+            # a missing artifact fails with a useful message.
+            ls -la "$GITHUB_WORKSPACE/mobile/android/app/build/outputs/apk/diagnostic/"
+            adb install -r "$GITHUB_WORKSPACE/mobile/android/app/build/outputs/apk/diagnostic/app-diagnostic.apk"
             echo "== installing mock wallet (best effort) =="
             timeout 300 npx -y solana-mobile@latest device install fakewallet \
               || echo "mock wallet install skipped; continuing with smoke assertions"
