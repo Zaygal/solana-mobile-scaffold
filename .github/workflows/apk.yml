@@ -105,6 +105,27 @@ jobs:
             || { echo "FAIL: no arm64-v8a libraries; this APK will not install on a real device"; exit 1; }
           echo "OK: arm64-v8a libraries present"
 
+      # Which toolchain built the C++ runtime that ships in this APK. Recorded so
+      # a version change is visible in the log rather than inferred later.
+      - name: Record packaged libc++ fingerprint
+        working-directory: mobile/android
+        run: |
+          APK="app/build/outputs/apk/diagnostic/app-diagnostic.apk"
+          TMP=$(mktemp -d)
+          unzip -o -q "$APK" 'lib/arm64-v8a/libc++_shared.so' -d "$TMP"
+          echo "packaged libc++: $(readelf -p .comment "$TMP/lib/arm64-v8a/libc++_shared.so" 2>/dev/null | grep -o 'clang version [0-9.]*' | head -1)"
+          rm -rf "$TMP"
+
+      # The gate that would have caught the sibling project's device crash. It
+      # resolves every undefined C++ runtime symbol in every packaged library
+      # against the libc++_shared.so shipping beside it, in every ABI. A missing
+      # symbol here is a guaranteed UnsatisfiedLinkError on a real device, and
+      # nothing else in this workflow can see it.
+      - name: Native ABI guard
+        run: |
+          sh "$GITHUB_WORKSPACE/.github/scripts/abi-guard.sh" \
+            "$GITHUB_WORKSPACE/mobile/android/app/build/outputs/apk/diagnostic/app-diagnostic.apk"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

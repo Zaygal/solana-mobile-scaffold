@@ -14,6 +14,20 @@ ext {
     targetSdkVersion = 35
     minSdkVersion = 26
     kotlinVersion = '2.1.20'
+
+    // Pin the NDK so the C++ runtime packaged into the APK cannot drift.
+    //
+    // This is not cosmetic. A sibling project shipped an APK that crashed on
+    // first launch because one native module was compiled with a newer NDK
+    // (clang 21, whose libc++ exports __cxa_init_primary_exception) while the
+    // libc++_shared.so packaged beside it came from clang 18, which does not
+    // export it. The build, the bundle check and the tests all passed; only
+    // dlopen on a real device failed. That project needed the newer NDK because
+    // it compiles C++ from source via nitro. This one does not: nothing here
+    // needs that symbol, so it stays on the toolchain that already produces a
+    // working APK, and the ABI guard in CI is what watches for a dependency
+    // change that would alter the requirement.
+    ndkVersion = "27.3.13750724"
 }
 
 apply plugin: 'com.facebook.react.rootproject'
