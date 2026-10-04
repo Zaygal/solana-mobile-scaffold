@@ -81,41 +81,7 @@ jobs:
           emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -e
-            # The action executes each script line in its own shell, so a
-            # variable assigned on one line is empty on the next: the install
-            # was running as `adb install -r ""` and dying on "filename doesn't
-            # end .apk". Inline the absolute path instead, and list it first so
-            # a missing artifact fails with a useful message.
-            ls -la "$GITHUB_WORKSPACE/mobile/android/app/build/outputs/apk/diagnostic/"
-            adb install -r "$GITHUB_WORKSPACE/mobile/android/app/build/outputs/apk/diagnostic/app-diagnostic.apk"
-            echo "== installing mock wallet (best effort) =="
-            timeout 300 npx -y solana-mobile@latest device install fakewallet \
-              || echo "mock wallet install skipped; continuing with smoke assertions"
-            adb shell pm list packages | grep -i wallet || true
-            echo "== launching =="
-            adb logcat -c
-            adb shell monkey -p com.zaygal.scaffold -c android.intent.category.LAUNCHER 1
-            sleep 45
-            echo "== process check =="
-            adb shell pidof com.zaygal.scaffold && echo "OK: app process alive"
-            echo "== logcat =="
-            adb logcat -d | grep -E "MWASCAFFOLD|AndroidRuntime|ReactNativeJS" | tail -60
-            adb logcat -d > /tmp/logcat.txt
-            grep -q "MWASCAFFOLD" /tmp/logcat.txt \
-              && echo "OK: app reached its own diagnostics" \
-              || { echo "FAIL: no MWASCAFFOLD output; JS may not have started"; exit 1; }
-            # The seal must round-trip inside the shipped bundle, because the
-            # whole submission claim is that app and verifier agree on the
-            # canonical payload. Assert it rather than trusting the build.
-            grep -q "seal-roundtrip OK" /tmp/logcat.txt \
-              && echo "OK: seal payload round-tripped in the shipped bundle" \
-              || { echo "FAIL: seal payload did not round-trip"; exit 1; }
-            if grep -q "AndroidRuntime: FATAL" /tmp/logcat.txt; then
-              echo "FAIL: native crash detected"; grep -A20 "AndroidRuntime: FATAL" /tmp/logcat.txt; exit 1
-            fi
-            echo "OK: no native crash"
+          script: sh "$GITHUB_WORKSPACE/.github/scripts/emulator-smoke.sh"
 
       - name: Upload logcat
         if: always()
