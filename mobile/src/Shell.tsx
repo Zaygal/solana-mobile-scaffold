@@ -22,7 +22,7 @@
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {AsyncStorageBridge} from './storage';
-import {Linking, Pressable, StyleSheet, Text, View} from 'react-native';
+import {BackHandler, Linking, Pressable, StyleSheet, Text, View} from 'react-native';
 import {T, type} from './theme';
 import Screen from './ui/Screen';
 import BottomNav, {TabKey} from './ui/BottomNav';
@@ -59,6 +59,36 @@ export default function Shell() {
   const [ready, setReady] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
   const [tab, setTab] = useState<TabKey>('today');
+
+  /**
+   * Android back, unwound in order.
+   *
+   * Without this the hardware back button did one thing on every screen: it
+   * closed the application. From Profile, Verify or Record that is simply wrong -
+   * the user is three taps deep and back should walk them out, not throw them out.
+   * It is also the loudest possible tell that an app is a web page in a shell,
+   * because a browser tab has nowhere to go back to either.
+   *
+   * Presented sheets are absent from this list on purpose. Sheet.tsx is a React
+   * Native Modal with onRequestClose wired, so Android hands the back key to the
+   * modal and it dismisses itself; the handler below does not run while one is
+   * open, and duplicating the close here would risk unwinding two levels from one
+   * press. What is left to unwind is the tab stack.
+   *
+   * Returning false on Today is deliberate and is not the bug being fixed: back
+   * from the start destination is meant to leave the app, and that is the one
+   * place where closing is the correct answer rather than a failure.
+   */
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (tab !== 'today') {
+        setTab('today');
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [tab]);
   const [address, setAddress] = useState<string | null>(null);
   const [state, setState] = useState<WalletState>('disconnected');
   const [rawError, setRawError] = useState<string | null>(null);

@@ -182,7 +182,10 @@ alive() {
 tap "RECORD" "tab-record"  || tap_tab 0.375 "tab-record";  sleep 2; alive; shot 03-record
 tap "VERIFY" "tab-verify"  || tap_tab 0.625 "tab-verify";  sleep 2; alive; shot 04-verify
 tap "PROFILE" "tab-profile" || tap_tab 0.875 "tab-profile"; sleep 2; alive; shot 05-profile
-tap "TODAY" "tab-today"    || tap_tab 0.125 "tab-today";   sleep 2; alive; shot 06-today-returning
+# The hardware back key, not a tap. From a non-start destination it must unwind
+# to Today. Before BackHandler was wired this line was the whole bug: the app was
+# gone by the next one, so "app pid" printing here IS the assertion.
+$ADB shell input keyevent 4; sleep 2; alive; shot 06-today-returning
 
 say "== logcat: crashes and fatal errors =="
 $ADB logcat -d > logcat.txt 2>/dev/null
