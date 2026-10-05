@@ -55,7 +55,11 @@ export function fmtCountdown(ms: number): string {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  return `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+  // Seconds are shown only in the final hour, where a user can actually act on
+  // them. Above an hour the minute is the unit that matters, and counting seconds
+  // down from twelve hours reads as noise rather than as urgency.
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  return `${m}m ${String(s).padStart(2, '0')}s`;
 }
 
 export function fmtDay(roundId: string): string {
@@ -104,12 +108,22 @@ export default function useRound(address: string | null) {
   const roundId = useMemo(() => roundIdFor(now), [now]);
   const msLeft = useMemo(() => msLeftInRound(roundId, now), [roundId, now]);
 
-  // One tick a second: the UTC day boundary is a real deadline in this product,
-  // so the countdown is information the user acts on, not decoration.
+  // The UTC day boundary is a real deadline in this product, so the countdown is
+  // information the user acts on rather than decoration - but it does not need a
+  // re-render every second to say so. Above the final hour it ticks every thirty
+  // seconds, which is the resolution of the thing being displayed; inside the
+  // final hour it ticks every second, where seconds are the point.
+  //
+  // This is not a micro-optimisation. Re-rendering once a second for a twelve-hour
+  // countdown keeps the view permanently non-idle, which drains battery and stops
+  // accessibility tooling from ever reading the screen - the same reason Android's
+  // own uiautomator refuses to dump this screen ("could not get idle state").
+  const finalHour = msLeft <= 60 * 60 * 1000;
+
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
+    const t = setInterval(() => setNow(new Date()), finalHour ? 1000 : 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [finalHour]);
 
   const refreshFromChain = useCallback(async (addr: string | null) => {
     if (!addr) return null;

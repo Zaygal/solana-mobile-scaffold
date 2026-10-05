@@ -140,7 +140,7 @@ PY
 # four fixed columns whose label row sits at y = 0.93 of the screen height, with
 # column centres at 1/8, 3/8, 5/8 and 7/8 of the width. Used only when the text
 # lookup fails, so this stays a fallback rather than the mechanism.
-TAB_Y=0.93
+TAB_Y=0.905
 tap_tab() {
   col="$1"; label="$2"
   size=$($ADB shell wm size 2>/dev/null | sed -n 's/.*: *\([0-9]*\)x\([0-9]*\).*/\1 \2/p' | tr -d '\r')
