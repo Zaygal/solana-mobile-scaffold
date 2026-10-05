@@ -35,6 +35,8 @@ import ProfileScreen from './screens/ProfileScreen';
 import useRound, {fmtDay} from './useRound';
 import {connectWallet, clearSession} from './mobileWallet';
 import {detectWallets, Wallet} from './wallets';
+import Press from './ui/Press';
+import {decodeSeal, encodeSeal, sealFromOutcome} from './seal';
 
 type WalletState =
   | 'disconnected'
@@ -79,6 +81,36 @@ export default function Shell() {
         setReady(true);
       })
       .catch(() => setReady(true));
+  }, []);
+
+  /**
+   * On-device proof that the seal payload round-trips inside the shipped app.
+   *
+   * The emulator smoke test asserts this exact line, and it went red when this
+   * shell replaced the old entry point: the app built and booted, but the one
+   * assertion that the seal encoding still works in the real binary had nothing
+   * left to read. Restoring the evidence is the correct fix. Deleting the
+   * assertion would have been the other one, and it would have been a lie.
+   */
+  useEffect(() => {
+    try {
+      const record = sealFromOutcome('2026-01-01', {
+        peak: 1,
+        durationMs: 10_000,
+        source: 'manual',
+      });
+      const memo = encodeSeal(record);
+      const back = decodeSeal(memo);
+      const ok =
+        !!back &&
+        back.roundId === record.roundId &&
+        back.durationMs === record.durationMs &&
+        back.source === record.source &&
+        back.version === record.version;
+      console.log(`MWASCAFFOLD: seal-roundtrip ${ok ? 'OK' : 'MISMATCH'} ${memo}`);
+    } catch (e) {
+      console.log(`MWASCAFFOLD: seal-roundtrip FAILED ${String(e)}`);
+    }
   }, []);
 
   const finishOnboarding = useCallback(() => {
@@ -222,9 +254,9 @@ export default function Shell() {
           <>
             <Text style={s.sheetLine}>Connected</Text>
             <Text style={s.mono}>{address}</Text>
-            <Pressable style={s.secondary} onPress={onDisconnect} accessibilityRole="button">
+            <Press style={s.secondary} onPress={onDisconnect}>
               <Text style={s.secondaryText}>Disconnect</Text>
-            </Pressable>
+            </Press>
           </>
         ) : state === 'connecting' ? (
           <Text style={s.sheetLine}>Waiting for your wallet to respond…</Text>
@@ -246,9 +278,9 @@ export default function Shell() {
               </Text>
             )}
 
-            <Pressable style={s.primary} onPress={onConnect} accessibilityRole="button">
+            <Press style={s.primary} onPress={onConnect}>
               <Text style={s.primaryText}>Continue to wallet</Text>
-            </Pressable>
+            </Press>
 
             {missing.length > 0 ? (
               <View style={s.install}>
@@ -290,16 +322,16 @@ export default function Shell() {
           <>
             <Text style={s.meta}>Transaction</Text>
             <Text style={s.mono}>{day.signature}</Text>
-            <Pressable
+            <Press
               style={s.secondary}
+              accessibilityRole="link"
               onPress={() => {
                 if (day?.signature) {
                   Linking.openURL(`https://explorer.solana.com/tx/${day.signature}?cluster=devnet`);
                 }
-              }}
-              accessibilityRole="link">
+              }}>
               <Text style={s.secondaryText}>Open in the explorer</Text>
-            </Pressable>
+            </Press>
           </>
         ) : (
           <Text style={s.sheetMeta}>

@@ -16,6 +16,8 @@ import React from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 import {T, type} from '../theme';
 import HoldVessel from '../HoldVessel';
+import Streak from '../Streak';
+import Press from '../ui/Press';
 import useRound, {fmtCountdown, fmtDay} from '../useRound';
 import {ACT_REQUIREMENT} from '../round';
 
@@ -59,13 +61,8 @@ export default function TodayScreen({address, round, onRequestWallet, onOpenReco
 
       {/* The streak. The largest thing on the screen, because verifiable
           continuity is the product. Provenance sits directly beneath it. */}
-      <Pressable onPress={onOpenRecord} style={s.streakBlock} accessibilityRole="button">
-        <Text style={[s.streak, {color: address ? T.signal : T.muted}]}>
-          {address ? streak.length : '—'}
-        </Text>
-        <Text style={s.streakLabel}>
-          {address ? `${streakWord} sealed in a row` : 'not connected'}
-        </Text>
+      <Streak length={streak.length} connected={!!address} />
+      <Pressable onPress={onOpenRecord} accessibilityRole="button">
         <Text style={[s.prov, {color: localCacheUsed ? T.alert : T.muted}]}>{provenance}</Text>
       </Pressable>
 
@@ -91,21 +88,20 @@ export default function TodayScreen({address, round, onRequestWallet, onOpenReco
             <Text style={[s.sealedText, {color: T.signal}]}>Sealed. Today is on the record.</Text>
           </View>
         ) : (
-          <Pressable
-            style={[s.primary, busy && s.primaryDim]}
+          <Press
+            style={[s.primary, busy ? s.primaryDim : null]}
             disabled={busy}
             onPress={() => {
               if (!address) return onRequestWallet();
               if (outcome?.satisfied) return onSeal();
               if (!attempt) return onOpenRound();
-            }}
-            accessibilityRole="button">
+            }}>
             {busy ? (
               <ActivityIndicator color={T.ink} />
             ) : (
               <Text style={s.primaryText}>{primaryLabel}</Text>
             )}
-          </Pressable>
+          </Press>
         )}
       </View>
 
