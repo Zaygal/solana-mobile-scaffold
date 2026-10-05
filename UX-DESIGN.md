@@ -28,8 +28,33 @@ Three notes, in the order they matter.
 
 ## 2. Design language
 
-From Zay Studio, mapped to React Native. One palette, and the accent means
-something specific.
+### 2.1 Reference corpus
+
+Two sources, both open source and both deliberately chosen.
+
+**`Zaygal/awesome-ios-design-md`** (fork of `Meliwat/awesome-ios-design-md`, MIT,
+570★) — 200 production design systems for real apps, each as a `DESIGN.md` plus
+framework-specific implementations including **`DESIGN-expo.md`**, which is React
+Native. Forked to the account so the reference is pinned rather than merely
+linked. Three of the eleven categories actually match this product:
+
+| System | Category | What is taken | What is not |
+|---|---|---|---|
+| **Apple Fitness** | fitness | the vessel metaphor; track at 22% of the fill colour; type scale with tabular numerals; haptic vocabulary | the three-ring structure, the neon ring palette, ease-out motion (§3.2) |
+| **Hevy** | fitness | how a set/streak history reads as a record rather than a game | its information density — too much for one daily act |
+| **Linear** | productivity | restraint: hairlines instead of cards, one accent, mono for labels | keyboard-first interaction, which has no mobile equivalent here |
+
+**`Zaygal/Zay-Studio`** — the account's own site. Its `tailwind.config.ts` tokens
+are the palette below, and its `globals.css` sets the two rules that matter most:
+`focus-visible` gets a real outline, and `prefers-reduced-motion` switches
+animation off rather than shrinking it.
+
+**Patterns are taken. Packages are not.** No UI kit is added as a dependency.
+These are design decisions to implement in plain React Native, which is also what
+the hackathon asks for — a screen built from an installed kit is not a screen
+designed from the ground up.
+
+One palette, mapped to React Native, and the accent means something specific.
 
 | Token | Value | Used for | Not used for |
 |---|---|---|---|
@@ -99,9 +124,20 @@ like one motion.
 
 **Fill.** From the **bottom up**, because "brimming" is a vertical metaphor and a
 left-right wipe reads as a progress bar rather than something filling. The fill
-rises linearly across the full 10s, in `signal`, with a soft leading edge — a
-2px brighter band at the top of the fill, which is the "light" being described.
-Label text sits above the fill and stays legible as it passes.
+rises in `signal` across the full 10s, with a soft leading edge — a 2px brighter
+band at the top, which is the "light" being described. Label text sits above the
+fill and stays legible as it passes.
+
+**The empty vessel is drawn, not left blank.** Apple Fitness's Expo guide sets
+the ring track to the fill colour at 22% opacity, and the same treatment applies
+to a box: the unfilled area is `signal` at 22% over `panel`, not grey. The
+container reads as a vessel that is being filled, rather than as an empty stage.
+
+**Motion is linear, and this is a deliberate divergence from the reference.**
+Apple's rings animate with `Easing.out(Easing.ease)` over 1000ms, which is
+correct for decoration — it settles pleasingly. A ten-second hold is not
+decoration: it is a measurement, and an ease-out would tell the user they had
+held longer than they had. `Easing.linear` over exactly 10000ms.
 
 **Releasing early.** The fill drains in 250ms and the hold resets. No error, no
 message: an interrupted hold is not a failure, it is an interrupted hold.
@@ -116,7 +152,29 @@ message: an interrupted hold is not a failure, it is an interrupted hold.
 | Released early | nothing | absence is the signal that it did not take |
 
 The ticks are the important one. They are what turns a ten-second wait into
-something being counted *by the phone*, rather than a wait with a spinner.
+something being counted *by the phone*, rather than a wait with a spinner. Apple
+Fitness's guide uses `selectionAsync()` for exactly this kind of per-step
+feedback, and `notificationAsync(Success)` at completion — the same vocabulary,
+chosen for the same reasons.
+
+**Implemented with React Native's built-in `Vibration`, not `expo-haptics`.**
+This is a bare RN app; pulling in `expo-modules-core` and `expo-haptics` to get
+three haptic types is a poor trade when `Vibration` already distinguishes
+duration and pattern. The vocabulary maps cleanly:
+
+| Intended | `expo-haptics` | here |
+|---|---|---|
+| acknowledge touch | `impactAsync(Medium)` | `Vibration.vibrate(40)` |
+| per-second tick | `selectionAsync()` | `Vibration.vibrate(20)` |
+| completed | `notificationAsync(Success)` | `Vibration.vibrate([0, 60, 80, 60])` |
+| released early | nothing | nothing |
+
+If haptics are ever wanted on iOS with real Taptic Engine types, adding
+`expo-haptics` is the upgrade and this table is the mapping.
+
+**Pressed state.** The action scales to `0.97` while held, as in the reference.
+On release it returns without animation, so the only continuous thing on screen
+is the fill.
 
 **What the hold does not claim.** A completed hold means the user held a button
 for ten seconds. It is not evidence of a physical act, and the record continues
@@ -171,7 +229,11 @@ this design is carried by animation alone.
   quality from restraint, a reserved accent and good type. Matching that is the
   point.
 - **No streak flame, badge or confetti.** The streak is a number and a row of
-  marks. It is a record, not a game.
+  marks. It is a record, not a game. Hevy's history screens were the reference
+  for this, and the lesson taken was structural: show the record, not a reward.
+- **No UI kit as a dependency.** The reference corpus is for design decisions.
+  Installing a component library would put someone else's interface around this
+  product, and the brief asks for a screen designed from the ground up.
 - **No wallet picker.** The platform owns discovery and approval. We never
   imitate it.
 - **No claim the record cannot support.** The seal proves a wallet signed a
