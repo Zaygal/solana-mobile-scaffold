@@ -18,6 +18,21 @@ mkdir -p shots
 
 say() { echo "$@" | tee -a "$OUT"; }
 
+# Install first. The first version of this script downloaded the artifact and went
+# straight to looking for the package, which is why it reported 'the APK did not
+# install' - nothing had tried to install it.
+APK=$(find apk -name '*.apk' 2>/dev/null | head -1)
+[ -z "$APK" ] && APK=$(find . -name '*.apk' 2>/dev/null | head -1)
+if [ -z "$APK" ]; then
+  say "no APK found to install; the download step produced nothing"
+  exit 1
+fi
+say "installing $APK"
+# -g grants the runtime permissions the app declares, so the first screen is not
+# a permission dialog.
+$ADB install -r -g "$APK" >/dev/null 2>&1 || $ADB install -r "$APK" >/dev/null 2>&1
+say "install exit: $?"
+
 # Package name is discovered, not assumed, and restricted to THIRD-PARTY
 # packages. The first version filtered the full list on a name pattern and matched
 # com.android.deskclock - the emulator's own clock app, containing 'clock' - then
