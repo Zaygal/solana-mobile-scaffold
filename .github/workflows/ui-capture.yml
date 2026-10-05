@@ -1,0 +1,65 @@
+name: UI capture
+
+# Take real screenshots of the app at phone dimensions and dump the visible text
+# at each step.
+#
+# The point is the acceptance test from the review: open it cold, as a new user
+# with no wallet installed, and record what they actually see. Nothing here is a
+# build gate - it exists so the interface can be inspected as an interface
+# rather than inferred from the source.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the newest APK
+        id: apk
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RID=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow apk.yml \
+                  --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -z "$RID" ]; then echo "no successful APK build found"; exit 1; fi
+          echo "Using APK from run $RID"
+          echo "run_id=$RID" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: scaffold-diagnostic-apk
+          path: apk
+          run-id: ${{ steps.apk.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Boot, install, and capture every screen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: sh "$GITHUB_WORKSPACE/.github/scripts/ui-capture.sh"
+
+      - name: Upload the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: |
+            shots/*.png
+            capture.txt
+          if-no-files-found: warn
