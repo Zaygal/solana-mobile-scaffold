@@ -226,7 +226,15 @@ const s = StyleSheet.create({
   pressed: {transform: [{scale: 0.97}]},
   fill: {position: 'absolute', left: 0, right: 0, top: 0, bottom: 0},
   edge: {position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: '#6EE79A'},
-  centre: {...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center'},
+  centre: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   count: {fontSize: 52, fontWeight: '800', fontVariant: ['tabular-nums']},
   label: {...type.section, marginTop: 12},
 });

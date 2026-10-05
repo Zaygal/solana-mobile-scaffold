@@ -26,7 +26,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {T} from './src/theme';
+import {T as tokens} from './src/theme';
 import {
   ActivityIndicator,
   Animated,
@@ -55,19 +55,27 @@ type WalletState =
   | 'cancelled' // user backed out of the wallet flow
   | 'timeout'; // the handoff never returned
 
+/**
+ * The screen's palette, mapped onto the design tokens.
+ *
+ * It is a mapping rather than a replacement because the names disagree in a way
+ * that matters: in this file `ink` has always meant TEXT, while in the token set
+ * `ink` is the near-black BACKGROUND. Pointing the two names at each other is
+ * what broke the build - `const T = {bg: T.ink}` refers to itself.
+ */
 const T = {
-  bg: T.ink,
-  surface: T.panel,
-  border: T.hairline,
-  ink: T.paper,
-  dim: T.muted,
-  faint: T.muted,
-  signal: T.signal,
-  signalInk: '#1E1400',
-  chain: T.steel,
-  warn: T.alert,
-  bad: T.alert,
-  good: T.signal,
+  bg: tokens.ink,
+  surface: tokens.panel,
+  border: tokens.hairline,
+  ink: tokens.paper,
+  dim: tokens.muted,
+  faint: tokens.muted,
+  signal: tokens.signal,
+  signalInk: tokens.ink, // text drawn on a signal fill
+  chain: tokens.steel,
+  warn: tokens.alert,
+  bad: tokens.alert,
+  good: tokens.signal,
 };
 
 /** Specific and true. No claim the record cannot support. */
