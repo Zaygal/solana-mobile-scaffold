@@ -11,6 +11,14 @@ name: UI capture
 on:
   workflow_dispatch:
 
+# The default token cannot read the Actions API on this repository, so listing
+# runs to find the newest APK failed with 'Resource not accessible by
+# integration'. Read scopes for what the job actually does: list workflows, and
+# download their artifact.
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   capture:
     runs-on: ubuntu-latest
