@@ -45,7 +45,6 @@ import {
 } from './round';
 import {selectAttestor} from './act';
 import {EXPLORER, RPC_ENDPOINT} from './config';
-import {connectWallet} from './mobileWallet';
 import {sendCommitment, sendSeal} from './sealTx';
 import {readSealsFromChain} from './chain';
 import {SealRecord, sealFromOutcome, streakFromSeals} from './seal';
@@ -89,9 +88,13 @@ function short(addr: string | null): string {
   return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 }
 
-export default function RoundScreen() {
+type Props = {
+  /** Base58 address of the wallet the application shell has already connected. */
+  address: string;
+};
+
+export default function RoundScreen({address}: Props) {
   const [now, setNow] = useState(new Date());
-  const [address, setAddress] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [status, setStatus] = useState('reading the chain…');
   const [error, setError] = useState<string | null>(null);
@@ -166,16 +169,11 @@ export default function RoundScreen() {
         setChainSeals(persisted.cache.seals);
         setLocalCacheUsed(true);
       }
-      try {
-        const auth = await connectWallet();
-        setAddress(auth.address);
-        setPhase('open');
-        await refreshFromChain(auth.address);
-      } catch (e: any) {
-        setAddress(null);
-        setPhase('unconnected');
-        setError(e?.message ?? String(e));
-      }
+      // The wallet is established by the application shell before this screen is
+      // mounted, so nothing here opens a wallet flow. This screen reads the
+      // chain for an address it was given; it never asks for one.
+      setPhase('open');
+      await refreshFromChain(address);
     })();
   }, [refreshFromChain]);
 
