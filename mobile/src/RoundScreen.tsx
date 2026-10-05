@@ -43,6 +43,8 @@ import {
   roundIdFor,
   settleExpired,
 } from './round';
+import {T} from './theme';
+import HoldVessel from './HoldVessel';
 import {selectAttestor} from './act';
 import {EXPLORER, RPC_ENDPOINT} from './config';
 import {sendCommitment, sendSeal} from './sealTx';
@@ -354,21 +356,26 @@ export default function RoundScreen({address}: Props) {
           day, and the act has to fall inside the day it belongs to.
         </Text>
 
-        <Pressable
-          style={[s.primary, (!address || todaySealed) && s.primaryOff]}
-          disabled={!address || todaySealed || phase === 'committing' || phase === 'sealing'}
-          onPress={onPrimary}
-          onPressIn={() => {
-            if (attempt && !outcome?.satisfied && !todaySealed) onHoldStart();
-          }}
-          onPressOut={() => {
-            if (attempt && !outcome?.satisfied && !todaySealed) onHoldEnd();
-          }}>
-          <Text style={s.primaryText}>{primaryLabel}</Text>
-        </Pressable>
+        {address && attempt && !outcome?.satisfied && !todaySealed ? (
+          // The one gesture here that is a measurement rather than a tap, so it
+          // gets the vessel that fills and the ticks that count, not a button.
+          <HoldVessel
+            label="Press and hold to attest"
+            onHoldStart={onHoldStart}
+            onRelease={onHoldEnd}
+            onComplete={onHoldEnd}
+          />
+        ) : (
+          <Pressable
+            style={[s.primary, (!address || todaySealed) && s.primaryOff]}
+            disabled={!address || todaySealed || phase === 'committing' || phase === 'sealing'}
+            onPress={onPrimary}>
+            <Text style={s.primaryText}>{primaryLabel}</Text>
+          </Pressable>
+        )}
 
         {(phase === 'committing' || phase === 'sealing' || phase === 'loading') && (
-          <ActivityIndicator color="#F5A524" style={s.spinner} />
+          <ActivityIndicator color={T.signal} style={s.spinner} />
         )}
         {outcome && !outcome.satisfied && !todaySealed && (
           <Text style={s.reason}>Not qualified yet: {outcome.reason}.</Text>
@@ -489,64 +496,64 @@ export default function RoundScreen({address}: Props) {
 }
 
 const s = StyleSheet.create({
-  root: {flex: 1, backgroundColor: '#0E0F11'},
+  root: {flex: 1, backgroundColor: T.ink},
   body: {padding: 22, paddingBottom: 60},
 
-  dateLine: {color: '#8B8F98', fontSize: 14},
-  stateLine: {color: '#EDEFF2', fontSize: 19, fontWeight: '600', marginTop: 8, lineHeight: 26},
+  dateLine: {color: T.muted, fontSize: 14},
+  stateLine: {color: T.paper, fontSize: 19, fontWeight: '600', marginTop: 8, lineHeight: 26},
 
   // The streak and its provenance are one unit: the number is the claim, the
   // line under it is why the claim can be checked.
   streakBlock: {marginTop: 26},
-  streak: {color: '#F5A524', fontSize: 78, fontWeight: '800', letterSpacing: -2, lineHeight: 82},
-  streakLabel: {color: '#B9BEC7', fontSize: 15, marginTop: 2},
+  streak: {color: T.signal, fontSize: 78, fontWeight: '800', letterSpacing: -2, lineHeight: 82},
+  streakLabel: {color: T.muted, fontSize: 15, marginTop: 2},
   provenance: {fontSize: 13, marginTop: 10, lineHeight: 19},
-  provGood: {color: '#57C98A'},
-  provBad: {color: '#E2705F'},
+  provGood: {color: T.signal},
+  provBad: {color: T.alert},
 
-  rule: {height: 1, backgroundColor: '#22252B', marginTop: 26},
+  rule: {height: 1, backgroundColor: T.hairline, marginTop: 26},
 
-  h: {color: '#EDEFF2', fontSize: 15, fontWeight: '700', marginTop: 18},
-  p: {color: '#AEB4BE', fontSize: 14, lineHeight: 21, marginTop: 8},
+  h: {color: T.paper, fontSize: 15, fontWeight: '700', marginTop: 18},
+  p: {color: T.muted, fontSize: 14, lineHeight: 21, marginTop: 8},
 
   primary: {
-    backgroundColor: '#F5A524',
+    backgroundColor: T.signal,
     borderRadius: 13,
     padding: 19,
     alignItems: 'center',
     marginTop: 20,
   },
   primaryOff: {opacity: 0.32},
-  primaryText: {color: '#2A1A02', fontWeight: '800', fontSize: 16},
+  primaryText: {color: T.ink, fontWeight: '800', fontSize: 16},
   spinner: {marginTop: 14},
-  reason: {color: '#E2705F', fontSize: 13, marginTop: 12, lineHeight: 19},
+  reason: {color: T.alert, fontSize: 13, marginTop: 12, lineHeight: 19},
 
   kv: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 10},
-  k: {color: '#7E848E', fontSize: 13},
-  v: {color: '#D7DBE1', fontSize: 13, fontVariant: ['tabular-nums']},
+  k: {color: T.muted, fontSize: 13},
+  v: {color: T.paper, fontSize: 13, fontVariant: ['tabular-nums']},
 
-  link: {color: '#F5A524', fontSize: 14, marginTop: 14},
+  link: {color: T.signal, fontSize: 14, marginTop: 14},
   code: {
-    color: '#D7DBE1',
+    color: T.paper,
     fontSize: 12,
     marginTop: 12,
     padding: 12,
-    backgroundColor: '#16181C',
+    backgroundColor: T.panel,
     borderRadius: 8,
   },
   ghost: {
     borderWidth: 1,
-    borderColor: '#2C3037',
+    borderColor: T.hairline,
     borderRadius: 13,
     padding: 14,
     alignItems: 'center',
     marginTop: 14,
   },
-  ghostText: {color: '#D7DBE1', fontSize: 14, fontWeight: '600'},
+  ghostText: {color: T.paper, fontSize: 14, fontWeight: '600'},
 
-  errorBlock: {marginTop: 24, borderLeftWidth: 2, borderLeftColor: '#E2705F', paddingLeft: 12},
-  errorText: {color: '#E2705F', fontSize: 13, lineHeight: 19},
+  errorBlock: {marginTop: 24, borderLeftWidth: 2, borderLeftColor: T.alert, paddingLeft: 12},
+  errorText: {color: T.alert, fontSize: 13, lineHeight: 19},
 
-  footer: {color: '#6C7178', fontSize: 12, marginTop: 30},
-  footerDim: {color: '#494E55', fontSize: 11, marginTop: 4},
+  footer: {color: T.muted, fontSize: 12, marginTop: 30},
+  footerDim: {color: T.steeldim, fontSize: 11, marginTop: 4},
 });

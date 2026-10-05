@@ -1,4 +1,5 @@
 import {Buffer} from 'buffer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {transact} from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import {
   Connection,
@@ -34,6 +35,46 @@ function decodeAddress(address: string): PublicKey {
 let sessionAuthToken: string | undefined;
 
 /**
+ * The same token, on disk.
+ *
+ * Held in a module variable alone, it died with the process - so every launch
+ * fell back to a full `authorize`, and the user was asked to confirm their
+ * wallet again before each signature. That is the defect the review reported.
+ * With it persisted, `reauthorize` succeeds silently and only the transaction
+ * itself is presented for approval.
+ *
+ * It is a session token, not a key: it authorises nothing on its own and grants
+ * no custody. It is cleared on forget-device.
+ */
+const SESSION_KEY = 'clockin.mwa.session';
+
+async function loadStoredToken(): Promise<string | undefined> {
+  if (sessionAuthToken) return sessionAuthToken;
+  try {
+    const stored = await AsyncStorage.getItem(SESSION_KEY);
+    if (stored) sessionAuthToken = stored;
+    return stored ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function storeToken(token?: string): Promise<void> {
+  sessionAuthToken = token;
+  try {
+    if (token) await AsyncStorage.setItem(SESSION_KEY, token);
+    else await AsyncStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Storage failing is not fatal: it costs a re-authorisation, not a signature.
+  }
+}
+
+/** Forget the wallet session. The next signing session will ask once again. */
+export async function clearSession(): Promise<void> {
+  await storeToken(undefined);
+}
+
+/**
  * The wallet must be authorised inside the same session that signs.
  *
  * Reauthorisation is silent when the token is still good, which keeps the normal
@@ -42,20 +83,21 @@ let sessionAuthToken: string | undefined;
  * `reauthorize` fails without a clear error once its token has gone.
  */
 async function ensureAuthorized(wallet: any): Promise<void> {
-  if (sessionAuthToken) {
+  const token = await loadStoredToken();
+  if (token) {
     try {
       const auth = await wallet.reauthorize({
-        auth_token: sessionAuthToken,
+        auth_token: token,
         identity: APP_IDENTITY,
       });
-      if (auth?.auth_token) sessionAuthToken = auth.auth_token;
+      await storeToken(auth?.auth_token ?? token);
       return;
     } catch {
       // Stale or rejected token: fall through to a full authorisation.
     }
   }
   const auth = await wallet.authorize({chain: CLUSTER, identity: APP_IDENTITY});
-  if (auth?.auth_token) sessionAuthToken = auth.auth_token;
+  await storeToken(auth?.auth_token);
 }
 
 export type Authorized = {
@@ -80,7 +122,7 @@ export async function connectWallet(): Promise<Authorized> {
     const account = auth.accounts?.[0];
     if (!account) throw new Error('Wallet authorised but returned no accounts');
     const address = decodeAddress(account.address).toBase58();
-    sessionAuthToken = auth.auth_token;
+    await storeToken(auth.auth_token);
     console.log(TAG, 'authorize-ok', address);
     return {
       address,

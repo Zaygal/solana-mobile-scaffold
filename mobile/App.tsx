@@ -26,6 +26,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {T} from './src/theme';
 import {
   ActivityIndicator,
   Animated,
@@ -55,18 +56,18 @@ type WalletState =
   | 'timeout'; // the handoff never returned
 
 const T = {
-  bg: '#0A1520',
-  surface: '#111E2A',
-  border: '#1E2E3C',
-  ink: '#EDF1F5',
-  dim: '#8A99A8',
-  faint: '#5B6B7A',
-  signal: '#FFD24A',
+  bg: T.ink,
+  surface: T.panel,
+  border: T.hairline,
+  ink: T.paper,
+  dim: T.muted,
+  faint: T.muted,
+  signal: T.signal,
   signalInk: '#1E1400',
-  chain: '#4FD1C5',
-  warn: '#F0A85C',
-  bad: '#E2705F',
-  good: '#5BD69A',
+  chain: T.steel,
+  warn: T.alert,
+  bad: T.alert,
+  good: T.signal,
 };
 
 /** Specific and true. No claim the record cannot support. */
