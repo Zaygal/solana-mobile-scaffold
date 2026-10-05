@@ -11,7 +11,15 @@
  */
 
 import React from 'react';
-import {Platform, ScrollView, StatusBar, StyleSheet, Text, View} from 'react-native';
+import {
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import {T, type} from '../theme';
 
 export const TAB_BAR_HEIGHT = 58;
@@ -41,14 +49,11 @@ export default function Screen({
       style={s.body}
       contentContainerStyle={s.bodyContent}
       showsVerticalScrollIndicator={false}
-      refreshControl={undefined}
-      {...(onRefresh
-        ? {
-            refreshControl: (
-              <RefreshControlBridge refreshing={!!refreshing} onRefresh={onRefresh} />
-            ),
-          }
-        : {})}>
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={T.muted} />
+        ) : undefined
+      }>
       {children}
     </ScrollView>
   ) : (
@@ -67,12 +72,6 @@ export default function Screen({
       {body}
     </View>
   );
-}
-
-/** Separated so the import is not pulled in for screens that never refresh. */
-function RefreshControlBridge({refreshing, onRefresh}: {refreshing: boolean; onRefresh: () => void}) {
-  const {RefreshControl} = require('react-native');
-  return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.muted} />;
 }
 
 export const TOP_INSET = Platform.OS === 'android' ? StatusBar.currentHeight ?? 24 : 44;
