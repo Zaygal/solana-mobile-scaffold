@@ -86,6 +86,12 @@ export default function RecordScreen({address, round, onRequestWallet, onOpenDay
         </Pressable>
       ))}
 
+      {/* The gesture exists and was invisible. With one or two days sealed the
+          list leaves the lower half of the screen to itself, which reads as an
+          unfinished screen rather than a short list. Naming the gesture is true,
+          useful, and gives the space something to be. */}
+      <Text style={s.tail}>Pull down to re-read the chain.</Text>
+
       {malformed.length > 0 ? (
         <View style={s.warn}>
           <Text style={s.warnTitle}>{malformed.length} record(s) could not be decoded</Text>
@@ -100,7 +106,13 @@ export default function RecordScreen({address, round, onRequestWallet, onOpenDay
 }
 
 const s = StyleSheet.create({
-  summary: {paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: T.hairline},
+  summary: {
+    backgroundColor: T.panel,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  tail: {...type.body, fontSize: 12.5, color: T.muted, marginTop: 20, textAlign: 'center'},
   summaryLine: {...type.section, color: T.paper},
   summaryMeta: {...type.body, fontSize: 12.5, marginTop: 4, lineHeight: 18},
   row: {

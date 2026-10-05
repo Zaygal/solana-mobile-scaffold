@@ -15,7 +15,7 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import {Animated, Dimensions, Platform, StatusBar, StyleSheet, Text, View} from 'react-native';
+import {Animated, Dimensions, Platform, Pressable, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {T, type} from '../theme';
 import {DUR, EASE, haptic, useReducedMotion} from '../motion';
 
@@ -34,12 +34,57 @@ const BOTTOM_INSET =
 
 export type TabKey = 'today' | 'record' | 'verify' | 'profile';
 
-export const TABS: {key: TabKey; label: string; glyph: string}[] = [
-  {key: 'today', label: 'Today', glyph: '\u25c9'},
-  {key: 'record', label: 'Record', glyph: '\u2630'},
-  {key: 'verify', label: 'Verify', glyph: '\u2713'},
-  {key: 'profile', label: 'Profile', glyph: '\u25ef'},
+export const TABS: {key: TabKey; label: string}[] = [
+  {key: 'today', label: 'Today'},
+  {key: 'record', label: 'Record'},
+  {key: 'verify', label: 'Verify'},
+  {key: 'profile', label: 'Profile'},
 ];
+
+/**
+ * The marks are drawn, not typed.
+ *
+ * The first version used Unicode characters to avoid an icon dependency. The
+ * reasoning was right and the characters were not: Record was U+2630 TRIGRAM FOR
+ * HEAVEN, which is also the universal hamburger menu, and Profile was U+25EF
+ * LARGE CIRCLE, which is an unselected radio button. On a four-tab bar those do
+ * not read as slightly-off icons, they name the wrong destination - a menu, and a
+ * choice not yet made.
+ *
+ * Unicode has no person glyph and no list glyph that is not a menu, so these are
+ * Views instead: same dependency-free footprint, unambiguous shapes. Record is a
+ * stack of entries, because that is what the screen is.
+ */
+function Mark({tab, color}: {tab: TabKey; color: string}) {
+  if (tab === 'today') {
+    return (
+      <View style={[m.box, m.ring, {borderColor: color}]}>
+        <View style={[m.dot, {backgroundColor: color}]} />
+      </View>
+    );
+  }
+  if (tab === 'record') {
+    return (
+      <View style={m.box}>
+        <View style={[m.cardBack, {borderColor: color}]} />
+        <View style={[m.cardFront, {borderColor: color, backgroundColor: T.panel}]} />
+      </View>
+    );
+  }
+  if (tab === 'verify') {
+    return (
+      <View style={m.box}>
+        <View style={[m.check, {borderRightColor: color, borderBottomColor: color}]} />
+      </View>
+    );
+  }
+  return (
+    <View style={m.box}>
+      <View style={[m.head, {backgroundColor: color}]} />
+      <View style={[m.shoulders, {backgroundColor: color}]} />
+    </View>
+  );
+}
 
 type Props = {
   active: TabKey;
@@ -48,14 +93,14 @@ type Props = {
 };
 
 function Tab({
+  tabKey,
   label,
-  glyph,
   on,
   badge,
   onPress,
 }: {
+  tabKey: TabKey;
   label: string;
-  glyph: string;
   on: boolean;
   badge?: string;
   onPress: () => void;
@@ -82,12 +127,9 @@ function Tab({
       accessibilityRole="tab"
       accessibilityState={{selected: on}}
       accessibilityLabel={label}>
-      <Text
-        onPress={onPress}
-        suppressHighlighting
-        style={[st.glyph, {color: on ? T.signal : T.muted}]}>
-        {glyph}
-      </Text>
+      <Pressable onPress={onPress}>
+        <Mark tab={tabKey} color={on ? T.signal : T.muted} />
+      </Pressable>
       {badge ? (
         <View style={st.badge}>
           <Text style={st.badgeText}>{badge}</Text>
@@ -115,8 +157,8 @@ export default function BottomNav({active, onChange, badge}: Props) {
       {TABS.map(tab => (
         <Tab
           key={tab.key}
+          tabKey={tab.key}
           label={tab.label}
-          glyph={tab.glyph}
           on={tab.key === active}
           badge={badge?.[tab.key]}
           onPress={() => {
@@ -130,6 +172,17 @@ export default function BottomNav({active, onChange, badge}: Props) {
   );
 }
 
+const m = StyleSheet.create({
+  box: {width: 22, height: 22, alignItems: 'center', justifyContent: 'center'},
+  ring: {borderWidth: 2, borderRadius: 11},
+  dot: {width: 8, height: 8, borderRadius: 4},
+  cardBack: {position: 'absolute', width: 13, height: 13, borderWidth: 1.7, borderRadius: 3, top: 2, left: 2},
+  cardFront: {position: 'absolute', width: 13, height: 13, borderWidth: 1.7, borderRadius: 3, top: 6, left: 6},
+  check: {width: 12, height: 12, borderRightWidth: 2.4, borderBottomWidth: 2.4, transform: [{rotate: '45deg'}], marginTop: -4},
+  head: {width: 8, height: 8, borderRadius: 4, marginBottom: 1.5},
+  shoulders: {width: 17, height: 8, borderTopLeftRadius: 9, borderTopRightRadius: 9},
+});
+
 const st = StyleSheet.create({
   bar: {
     flexDirection: 'row',
@@ -140,7 +193,6 @@ const st = StyleSheet.create({
     backgroundColor: T.panel,
   },
   tab: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 7},
-  glyph: {fontSize: 20, lineHeight: 24},
   label: {...type.label, fontSize: 10, letterSpacing: 0.6, marginTop: 3},
   underline: {
     position: 'absolute',

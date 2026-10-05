@@ -38,7 +38,7 @@ export default function TodayScreen({address, round, onRequestWallet, onOpenReco
   const busy = phase === 'committing' || phase === 'sealing';
 
   const primaryLabel = !address
-    ? 'Connect a wallet to start'
+    ? 'Connect a wallet'
     : todaySealed
     ? 'Today is sealed'
     : phase === 'committing'
@@ -62,9 +62,11 @@ export default function TodayScreen({address, round, onRequestWallet, onOpenReco
       {/* The streak. The largest thing on the screen, because verifiable
           continuity is the product. Provenance sits directly beneath it. */}
       <Streak length={streak.length} connected={!!address} />
-      <Pressable onPress={onOpenRecord} accessibilityRole="button">
-        <Text style={[s.prov, {color: localCacheUsed ? T.alert : T.muted}]}>{provenance}</Text>
-      </Pressable>
+      {provenance ? (
+        <Pressable onPress={onOpenRecord} accessibilityRole="button">
+          <Text style={[s.prov, {color: localCacheUsed ? T.alert : T.muted}]}>{provenance}</Text>
+        </Pressable>
+      ) : null}
 
       <Text style={s.state}>{stateLine}</Text>
 

@@ -318,7 +318,7 @@ export default function useRound(address: string | null) {
   // The state as a sentence, because the boundary is information the user acts
   // on rather than a badge.
   const stateLine = !address
-    ? 'Connect a wallet to start a round. Nothing here needs one until then.'
+    ? 'Nothing is stored on this device. Sealing is the only step that needs a wallet.'
     : todaySealed
     ? 'Sealed. Today is on the record.'
     : outcome?.satisfied
@@ -328,8 +328,12 @@ export default function useRound(address: string | null) {
     : `Still open, with ${fmtCountdown(msLeft)} left in the UTC day.`;
 
   const streakWord = streak.length === 1 ? 'day' : 'days';
+  // Empty, not a third statement of the same absence. With no address, Today
+  // already renders the vessel as not connected and the action as "Connect a
+  // wallet"; a further line reporting the missing wallet was the screen
+  // repeating itself four times over.
   const provenance = !address
-    ? 'No wallet connected, so nothing has been read from the chain yet.'
+    ? ''
     : localCacheUsed
     ? "Read from this device's cached copy. That is a claim, not proof."
     : `Rebuilt from devnet transaction history — ${scanned} transaction${
