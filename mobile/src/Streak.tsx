@@ -113,7 +113,6 @@ export default function Streak({length, connected, onPress}: Props) {
         <View style={s.coldVessel} />
         <Text style={s.label}>not connected</Text>
         <View style={s.track} />
-        <Text style={s.foot}>Connect a wallet to read the record.</Text>
       </View>
     );
   }

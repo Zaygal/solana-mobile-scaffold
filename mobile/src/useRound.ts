@@ -318,7 +318,7 @@ export default function useRound(address: string | null) {
   // The state as a sentence, because the boundary is information the user acts
   // on rather than a badge.
   const stateLine = !address
-    ? 'Nothing is stored on this device. Sealing is the only step that needs a wallet.'
+    ? 'Nothing is stored on this device. The record is read from Solana.'
     : todaySealed
     ? 'Sealed. Today is on the record.'
     : outcome?.satisfied
