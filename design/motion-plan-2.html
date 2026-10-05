@@ -1,0 +1,176 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{
+ --ink:#0B0D0F; --panel:#131518; --hair:#232629; --paper:#EAEAE7;
+ --muted:#8A8F98; --steel:#5B7FB8; --steeldim:#3E5578; --signal:#4ADE80; --alert:#E5654A;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
+.sheet{width:100vw;height:100vh;background:var(--ink);color:var(--paper);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ padding:42px 56px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.hair{height:1px;background:var(--hair)}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1{font-size:37px;font-weight:800;letter-spacing:-.035em;line-height:1.02}
+h2{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.hdr{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;padding-bottom:18px}
+.brief{font-size:14.5px;line-height:1.62;color:#CFD2D6}
+.brief b{color:var(--paper);font-weight:600}
+.sec{margin-top:20px}
+.law{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--hair);margin-top:14px;border:1px solid var(--hair)}
+.law>div{background:var(--ink);padding:15px 17px}
+.law .id{font-family:var(--mono);font-size:11px;color:var(--steeldim)}
+.law h3{font-size:15px;font-weight:700;letter-spacing:-.02em;margin:9px 0 8px;line-height:1.24}
+.law p{font-size:12.3px;line-height:1.5;color:var(--muted)}
+.law em{color:var(--signal);font-style:normal}
+/* ---- the streak sequence ---- */
+.seq{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;margin-top:11px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cap{display:flex;justify-content:space-between;width:100%;margin-bottom:7px}
+.cap .lbl{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.cap .t{font-family:var(--mono);font-size:11px;color:var(--steeldim)}
+.phone{height:274px;aspect-ratio:9/17.5;width:auto;margin:0 auto;border:1.5px solid var(--hair);border-radius:17px;
+ background:var(--panel);padding:11px 10px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.pbar{display:flex;justify-content:space-between;margin-bottom:14px}
+.pbar i{display:block;height:3px;border-radius:2px;background:var(--hair);width:26px}
+.sday{font-family:var(--mono);font-size:8.5px;color:var(--muted);letter-spacing:.1em}
+.sbig{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;margin-top:6px}
+.slab{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+.tabs{margin-top:auto;display:flex;justify-content:space-between;padding-top:9px;border-top:1px solid var(--hair)}
+.tabs i{display:block;width:16px;height:2px;background:var(--hair);border-radius:1px}
+.note{font-size:11.4px;line-height:1.48;color:var(--muted);margin-top:9px;width:100%}
+.note b{color:var(--paper);font-weight:600}
+/* ruler */
+.ruler{margin-top:auto}
+.rline{position:relative;height:34px;border-top:1px solid var(--hair);margin-top:6px}
+.tick{position:absolute;top:0;height:100%;border-left:1px solid var(--hair)}
+.ticklbl{position:absolute;top:8px;font-family:var(--mono);font-size:10px;color:var(--muted);transform:translateX(4px)}
+.seg{position:absolute;top:22px;height:3px;border-radius:2px}
+.legend{display:flex;gap:26px;margin-top:14px;align-items:center}
+.dot{display:inline-block;width:8px;height:8px;border-radius:5px;margin-right:7px;vertical-align:middle}
+.foot{margin-top:12px;padding-top:11px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;align-items:baseline}
+
+/* sheet 2 specific */
+.tbl{width:100%;border-collapse:collapse;margin-top:14px}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+ text-transform:uppercase;color:var(--muted);padding:0 12px 9px 0;border-bottom:1px solid var(--hair);font-weight:500}
+.tbl td{padding:8px 12px 8px 0;border-bottom:1px solid #1A1D20;font-size:12.5px;vertical-align:top;line-height:1.45}
+.tbl td:first-child{font-weight:600;white-space:nowrap}
+.tbl .m{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:1.06fr 1fr;gap:42px;margin-top:18px}
+.curves{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
+.cbox{border:1px solid var(--hair);border-radius:10px;padding:12px;background:var(--panel)}
+.cbox svg{width:100%;height:56px;display:block}
+.cl{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:9px;line-height:1.5}
+.cl b{color:var(--paper);display:block;font-size:11.5px;font-weight:600;margin-bottom:3px}
+.borrow{margin-top:14px;border:1px solid var(--hair);border-radius:10px;overflow:hidden}
+.brow{display:grid;grid-template-columns:92px 1fr;gap:14px;padding:9px 13px;border-bottom:1px solid #1A1D20}
+.brow:last-child{border-bottom:0}
+.brow .w{font-size:12.5px;font-weight:700;letter-spacing:-.01em}
+.brow .p{font-size:12.5px;line-height:1.5;color:var(--muted)}
+.brow .p b{color:var(--paper);font-weight:600}
+.refuse{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 22px}
+.rf{font-size:12.5px;line-height:1.45;color:var(--muted);padding-left:15px;position:relative}
+.rf:before{content:"×";position:absolute;left:0;top:-1px;color:var(--alert);font-family:var(--mono);font-size:13px}
+.rf b{color:#C9CDD2;font-weight:600}
+.decide{margin-top:14px;border:1px solid var(--signal);border-radius:12px;padding:14px 18px;
+ background:rgba(74,222,128,.05);display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px}
+.decide h4{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--signal);margin-bottom:8px}
+.decide p{font-size:12.5px;line-height:1.52;color:#C9CDD2}
+.decide p b{color:var(--paper);font-weight:600}
+</style></head><body>
+<div class="sheet">
+  <div class="hdr" style="grid-template-columns:620px 1fr">
+    <div>
+      <div class="mono">Sheet 2 of 2 · interaction spec</div>
+      <h1>Every touch<br>answers back</h1>
+      <div class="mono" style="margin-top:14px;color:var(--steeldim)">Built with RN Animated · no new native dependency</div>
+    </div>
+    <div class="brief">
+      <b>The principle.</b> A native app is not distinguished by its layout. It is distinguished by the
+      fact that <b>nothing happens without a response</b>. Below is every surface where a finger can land,
+      what it does back, and how long it takes. Where a number is quoted, it is the actual value.
+    </div>
+  </div>
+  <div class="hair"></div>
+
+  <div class="cols">
+    <div>
+      <h2>04 · Every touch surface</h2>
+      <table class="tbl">
+        <tr><th>surface</th><th>on press</th><th>release</th><th>haptic</th></tr>
+        <tr><td>Primary button</td><td>scale to <span class="m">0.94</span> in <span class="m">90ms</span></td><td>spring back <span class="m">180ms</span></td><td class="m">impact · 15ms</td></tr>
+        <tr><td>Tab</td><td>glyph dims, underline draws <b>from centre outward</b> <span class="m">160ms</span></td><td>underline holds</td><td class="m">selection · 10ms</td></tr>
+        <tr><td>Record row</td><td>background lifts to panel, chevron nudges <span class="m">2px</span></td><td>sheet rises</td><td class="m">—</td></tr>
+        <tr><td>Vessel (hold)</td><td>fills bottom-up <span class="m">10000ms linear</span></td><td>drains in <span class="m">220ms</span> — silent, nothing else happens</td><td class="m">1 tick/s · 20ms</td></tr>
+        <tr><td>Sheet</td><td>rises <span class="m">320ms</span>, scrim fades <span class="m">200ms</span></td><td>drag-to-dismiss, follows velocity, releases at <span class="m">0.4px/ms</span></td><td class="m">—</td></tr>
+        <tr><td>Seal result</td><td>row appears <b>pending</b> immediately</td><td>resolves to the signature, or <b>visibly retracts</b> on failure</td><td class="m">success only</td></tr>
+      </table>
+      <p class="mono" style="margin-top:11px;text-transform:none;letter-spacing:.02em;color:var(--steeldim)">
+        The last row is the X pattern: optimistic, then reconciled — and it retracts out loud when the chain refuses.
+        An optimistic state that cannot retract is a lie with a loading spinner.</p>
+    </div>
+
+    <div>
+      <h2>05 · The four curves, and where each is used</h2>
+      <div class="curves">
+        <div class="cbox"><svg viewBox="0 0 120 120" preserveAspectRatio="none">
+ <line x1="0" y1="120" x2="120" y2="120" stroke="#232629"/><line x1="0" y1="0" x2="0" y2="120" stroke="#232629"/>
+ <path d="M0,120 L120,0" fill="none" stroke="#4ADE80" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+</svg><div class="cl"><b>linear</b>hold · count-up · progress. A measurement has no curve.</div></div>
+        <div class="cbox"><svg viewBox="0 0 120 120" preserveAspectRatio="none">
+ <line x1="0" y1="120" x2="120" y2="120" stroke="#232629"/><line x1="0" y1="0" x2="0" y2="120" stroke="#232629"/>
+ <path d="M0,120 C26.4,0 43.2,0 120,0" fill="none" stroke="#4ADE80" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+</svg><div class="cl"><b>press</b>cubic-bezier(.22,1,.36,1) · 90ms · touch response</div></div>
+        <div class="cbox"><svg viewBox="0 0 120 120" preserveAspectRatio="none">
+ <line x1="0" y1="120" x2="120" y2="120" stroke="#232629"/><line x1="0" y1="0" x2="0" y2="120" stroke="#232629"/>
+ <path d="M0,120 C38.4,33.6 0,0 120,0" fill="none" stroke="#4ADE80" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+</svg><div class="cl"><b>sheet rise</b>cubic-bezier(.32,.72,0,1) · 320ms · rises then settles</div></div>
+        <div class="cbox"><svg viewBox="0 0 120 120" preserveAspectRatio="none">
+ <line x1="0" y1="120" x2="120" y2="120" stroke="#232629"/><line x1="0" y1="0" x2="0" y2="120" stroke="#232629"/>
+ <path d="M0,120 C40.8,-67.2 76.8,0 120,0" fill="none" stroke="#4ADE80" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+</svg><div class="cl"><b>milestone</b>cubic-bezier(.34,1.56,.64,1) · 900ms · overshoots once, at 7/30/100 only</div></div>
+      </div>
+
+      <h2 style="margin-top:30px">06 · Borrowed — the pattern, never the branding</h2>
+      <div class="borrow">
+        <div class="brow"><div class="w">Duolingo</div><div class="p">A streak presented as a <b>record with a stated cost</b>, not a reward.
+          Taken: the record framing. Refused: the owl, the urgency, the guilt.</div></div>
+        <div class="brow"><div class="w">Telegram</div><div class="p">Sheets that <b>follow your finger</b> and can be thrown away. Taken: gesture physics.
+          This is the single biggest gap in our build.</div></div>
+        <div class="brow"><div class="w">X</div><div class="p">The action lands <b>before the network answers</b>, then reconciles — and visibly undoes itself.
+          Taken wholesale for the seal row.</div></div>
+        <div class="brow"><div class="w">Snapchat</div><div class="p">First gesture is the product, <b>zero onboarding ceremony</b>. Taken: as a warning.
+          We are the opposite kind of product, so we keep the onboarding.</div></div>
+        <div class="brow"><div class="w">WhatsApp</div><div class="p">A send feels <b>physical</b> — one tick, no animation you could name.
+          Taken: the discipline of one small unambiguous acknowledgement.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>07 · What I would refuse to animate</h2>
+    <div class="refuse">
+      <div class="rf"><b>A flame or fire that grows</b> — implies heat, energy, a body. We track a held button.</div>
+      <div class="rf"><b>Any number moving without a chain write</b> — the count-up must end on the real value.</div>
+      <div class="rf"><b>Confetti, particles, bursts</b> — celebration sized to something that did not happen.</div>
+      <div class="rf"><b>Skeleton shimmer on Today</b> — nothing is loading there. Fake latency is fake.</div>
+      <div class="rf"><b>Any looping ambient motion</b> — R1. It is the clearest tell of decoration.</div>
+      <div class="rf"><b>A haptic on a failed action</b> — feedback that contradicts the outcome.</div>
+      <div class="rf"><b>Motion before the wallet sheet</b> — not one frame of delay on the approval.</div>
+      <div class="rf"><b>A 7-day celebration for 6 days</b> — the milestone fires on the on-chain value only.</div>
+    </div>
+  </div>
+
+  <div class="decide">
+    <div><h4>What I need from you</h4><p>Approve the <b>three rules</b>, confirm the <b>four streak states</b>,
+      and settle the <b>voice question</b> from the video plan. Nothing gets built before that.</p></div>
+    <div><h4>What it costs</h4><p>About <b>a day</b> in the shell and the four screens, using React Native's
+      built-in Animated. <b>No new native dependency</b> — so no rebuild risk this close to the deadline.</p></div>
+    <div><h4>The trade I am not hiding</h4><p>Reanimated would give real gesture physics for the sheets.
+      It is also a native dependency and a fresh build risk <b>two days before submission</b>. My
+      recommendation is <b>built-in now, Reanimated after</b> the deadline.</p></div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,197 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{
+ --ink:#0B0D0F; --panel:#131518; --hair:#232629; --paper:#EAEAE7;
+ --muted:#8A8F98; --steel:#5B7FB8; --steeldim:#3E5578; --signal:#4ADE80; --alert:#E5654A;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
+.sheet{width:100vw;height:100vh;background:var(--ink);color:var(--paper);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ padding:42px 56px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.hair{height:1px;background:var(--hair)}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1{font-size:37px;font-weight:800;letter-spacing:-.035em;line-height:1.02}
+h2{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.hdr{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;padding-bottom:18px}
+.brief{font-size:14.5px;line-height:1.62;color:#CFD2D6}
+.brief b{color:var(--paper);font-weight:600}
+.sec{margin-top:20px}
+.law{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--hair);margin-top:14px;border:1px solid var(--hair)}
+.law>div{background:var(--ink);padding:15px 17px}
+.law .id{font-family:var(--mono);font-size:11px;color:var(--steeldim)}
+.law h3{font-size:15px;font-weight:700;letter-spacing:-.02em;margin:9px 0 8px;line-height:1.24}
+.law p{font-size:12.3px;line-height:1.5;color:var(--muted)}
+.law em{color:var(--signal);font-style:normal}
+/* ---- the streak sequence ---- */
+.seq{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:13px}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cap{display:flex;justify-content:space-between;width:100%;margin-bottom:7px}
+.cap .lbl{font-size:13px;font-weight:700;letter-spacing:-.01em}
+.cap .t{font-family:var(--mono);font-size:11px;color:var(--steeldim)}
+.phone{height:274px;aspect-ratio:9/17.5;width:auto;margin:0 auto;border:1.5px solid var(--hair);border-radius:17px;
+ background:var(--panel);padding:11px 10px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.pbar{display:flex;justify-content:space-between;margin-bottom:14px}
+.pbar i{display:block;height:3px;border-radius:2px;background:var(--hair);width:26px}
+.sday{font-family:var(--mono);font-size:8.5px;color:var(--muted);letter-spacing:.1em}
+.sbig{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;margin-top:6px}
+.slab{font-size:11.5px;margin-top:7px;color:var(--muted);margin-top:5px;line-height:1.35}
+.tabs{margin-top:auto;display:flex;justify-content:space-between;padding-top:9px;border-top:1px solid var(--hair)}
+.tabs i{display:block;width:16px;height:2px;background:var(--hair);border-radius:1px}
+.note{font-size:11.4px;line-height:1.48;color:var(--muted);margin-top:9px;width:100%}
+.note b{color:var(--paper);font-weight:600}
+/* ruler */
+.ruler{margin-top:auto}
+.rline{position:relative;height:34px;border-top:1px solid var(--hair);margin-top:6px}
+.tick{position:absolute;top:0;height:100%;border-left:1px solid var(--hair)}
+.ticklbl{position:absolute;top:8px;font-family:var(--mono);font-size:10px;color:var(--muted);transform:translateX(4px)}
+.seg{position:absolute;top:22px;height:3px;border-radius:2px}
+.legend{display:flex;gap:26px;margin-top:14px;align-items:center}
+.dot{display:inline-block;width:8px;height:8px;border-radius:5px;margin-right:7px;vertical-align:middle}
+.foot{margin-top:12px;padding-top:11px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;align-items:baseline}
+
+.phone{width:200px;height:404px;aspect-ratio:auto;padding:13px 12px}
+.ptop{display:flex;justify-content:space-between;align-items:baseline}
+.pcd{font-family:var(--mono);font-size:7.5px;color:var(--steeldim)}
+.strack{height:3px;border-radius:2px;background:var(--hair);margin-top:10px;overflow:hidden}
+.strack i{display:block;height:100%;border-radius:2px}
+.sbig{margin-top:16px;font-size:52px;letter-spacing:-2.5px}
+.pfoot{font-family:var(--mono);font-size:7.5px;color:var(--steeldim);margin-top:7px}
+.rstrip{display:flex;height:11px;border-radius:6px;overflow:hidden;margin-top:11px;background:var(--hair)}
+.rstrip i{display:block;height:100%}
+.rlegend{display:flex;gap:20px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.rl{font-family:var(--mono);font-size:10.5px;color:var(--muted);display:flex;align-items:center}
+
+.vessel{width:42px;height:56px;border:1.5px solid var(--hair);border-radius:7px;margin:24px auto 0;
+ position:relative;overflow:hidden;background:rgba(74,222,128,.07)}
+.vessel i{position:absolute;left:0;right:0;bottom:0;background:var(--signal)}
+.vlab{font-family:var(--mono);font-size:7.5px;color:var(--steeldim);text-align:center;margin-top:8px;letter-spacing:.06em}
+</style></head><body>
+<div class="sheet">
+  <div class="hdr">
+    <div>
+      <div class="mono">Sheet 1 of 2 · motion &amp; interaction plan</div>
+      <h1>Clock In<br>Motion Plan</h1>
+      <div class="mono" style="margin-top:14px;color:var(--steeldim)">No code changes made · for your decision</div>
+    </div>
+    <div class="brief">
+      <b>The diagnosis.</b> The rebuild is architecturally mobile and behaviourally inert.
+      Every state change is a <b>cut</b>: the streak appears with no arrival, a button press
+      is acknowledged by nothing, a sheet replaces the screen rather than rising over it.
+      Layout is not what makes Snapchat, Telegram or Duolingo feel alive — <b>every touch
+      answering back</b> is. That is the missing layer, and it is not colour or rounding.
+    </div>
+  </div>
+  <div class="hair"></div>
+
+  <div class="sec">
+    <h2>01 · The motion law — three rules that decide every case below</h2>
+    <div class="law">
+      <div><div class="id">R1</div>
+        <h3>Motion answers touch. It never fills time.</h3>
+        <p>If an animation runs while the user is doing nothing, it is decoration. <em>Nothing loops.</em>
+        No idle pulse, no shimmer on a screen with nothing loading.</p></div>
+      <div><div class="id">R2</div>
+        <h3>The measurement stays linear.</h3>
+        <p>The 10s hold and the streak count-up use linear timing, because easing implies a
+        curve where there is only elapsed time. <em>Everything else may be expressive.</em></p></div>
+      <div><div class="id">R3</div>
+        <h3>Celebrate only what is true.</h3>
+        <p>A seal earns a moment. A day that was not sealed gets nothing. No confetti, no
+        fire, no number that moves without a chain write. <em>This is the honesty rule, as motion.</em></p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>02 · The streak — four states, and the moment it changes</h2>
+    <div class="seq">
+      <div class="cell">
+        <div class="cap"><span class="lbl">A · Cold</span><span class="t">0 days</span></div>
+        <div class="phone">
+ <div class="pbar"><i></i><i></i></div>
+ <div class="ptop"><span class="sday">MON 5 OCT</span><span class="pcd">—</span></div>
+ <div class="sbig" style="color:#8A8F98">—</div>
+ <div class="slab">not connected</div>
+ <div class="strack"><i style="width:0%;background:#8A8F98"></i></div>
+ <div class="pfoot">no round open</div>
+ <div class="vessel"><i style="height:0%"></i></div>
+ <div class="vlab">vessel empty</div>
+ <div class="tabs"><i style="background:#232629"></i><i style="background:#4ADE80"></i><i style="background:#232629"></i><i style="background:#232629"></i></div>
+</div>
+        <div class="note">Drawn as an <b>empty vessel</b>, not a zero. A zero reads as failure; an empty one reads as waiting. Muted, no mark, no flame.</div>
+      </div>
+      <div class="cell">
+        <div class="cap"><span class="lbl">B · Lit</span><span class="t">n days</span></div>
+        <div class="phone">
+ <div class="pbar"><i></i><i></i></div>
+ <div class="ptop"><span class="sday">MON 5 OCT</span><span class="pcd">19h 04m</span></div>
+ <div class="sbig" style="color:#4ADE80">1</div>
+ <div class="slab">day sealed in a row</div>
+ <div class="strack"><i style="width:14%;background:#4ADE80"></i></div>
+ <div class="pfoot">1 of 7 to a milestone</div>
+ <div class="vessel"><i style="height:14%"></i></div>
+ <div class="vlab">filling</div>
+ <div class="tabs"><i style="background:#232629"></i><i style="background:#4ADE80"></i><i style="background:#232629"></i><i style="background:#232629"></i></div>
+</div>
+        <div class="note">The track's fill is the streak's <b>real fraction</b> of the next milestone. A ring would be decoration; this is a quantity.</div>
+      </div>
+      <div class="cell">
+        <div class="cap"><span class="lbl">C · The seal</span><span class="t">400ms linear</span></div>
+        <div class="phone">
+ <div class="pbar"><i></i><i></i></div>
+ <div class="ptop"><span class="sday">MON 5 OCT</span><span class="pcd">19h 03m</span></div>
+ <div class="sbig" style="color:#4ADE80">2</div>
+ <div class="slab">day sealed in a row</div>
+ <div class="strack"><i style="width:28%;background:#4ADE80"></i></div>
+ <div class="pfoot">2 of 7 to a milestone</div>
+ <div class="vessel"><i style="height:28%"></i></div>
+ <div class="vlab">just refilled</div>
+ <div class="tabs"><i style="background:#232629"></i><i style="background:#4ADE80"></i><i style="background:#232629"></i><i style="background:#232629"></i></div>
+</div>
+        <div class="note">The number counts <b>1 → 2</b> over 400ms on a <b>linear</b> curve, the track refills, one haptic fires. Fast enough to read as consequence, slow enough to be seen.</div>
+      </div>
+      <div class="cell">
+        <div class="cap"><span class="lbl">D · Milestone</span><span class="t">900ms, once</span></div>
+        <div class="phone">
+ <div class="pbar"><i></i><i></i></div>
+ <div class="ptop"><span class="sday">MON 5 OCT</span><span class="pcd">19h 02m</span></div>
+ <div class="sbig" style="color:#4ADE80">7</div>
+ <div class="slab">days sealed in a row</div>
+ <div class="strack"><i style="width:100%;background:#4ADE80"></i></div>
+ <div class="pfoot">milestone reached</div>
+ <div class="vessel"><i style="height:100%"></i></div>
+ <div class="vlab">brimming</div>
+ <div class="tabs"><i style="background:#232629"></i><i style="background:#4ADE80"></i><i style="background:#232629"></i><i style="background:#232629"></i></div>
+</div>
+        <div class="note">At 7 / 30 / 100, one <b>0.6% scale pulse</b> and the track completes. Fires <b>once per milestone</b>, keyed on the on-chain value — so reopening the app cannot farm it.</div>
+      </div>
+    </div>
+  <div class="ruler">
+    <h2>03 · The sequence, as one timeline — drawn at true proportion</h2>
+    <div class="rstrip">
+      <i style="flex:90;background:#8A8F98"></i>
+      <i style="flex:10000;background:#4ADE80"></i>
+      <i style="flex:400;background:#E5654A"></i>
+      <i style="flex:400;background:#5B7FB8"></i>
+      <i style="flex:300;background:#4ADE80"></i>
+    </div>
+    <div class="rlegend">
+      <span class="rl"><span class="dot" style="background:#8A8F98"></span>press · 90ms</span>
+      <span class="rl"><span class="dot" style="background:#4ADE80"></span>hold · 10000ms · linear · 1 haptic tick per second</span>
+      <span class="rl"><span class="dot" style="background:#E5654A"></span>wallet approval · the wallet's own UI, untouched by us</span>
+      <span class="rl"><span class="dot" style="background:#5B7FB8"></span>count-up · 400ms</span>
+      <span class="rl"><span class="dot" style="background:#4ADE80"></span>resolve · 300ms</span>
+    </div>
+    <p style="font-size:12.5px;line-height:1.5;color:#C9CDD2;margin-top:11px">
+      <b style="color:var(--paper)">The bar is almost entirely the hold — 89% of this app's timeline is one person holding a button.</b>
+      That proportion is the product, so it is the one thing in this plan I will not shorten for pacing.</p>
+  </div>
+
+  <div class="foot">
+    <span class="mono">Clock In · Solana Mobile · design/DEMO-VIDEO-PLAN.md companion</span>
+    <span class="mono" style="color:var(--steeldim)">sheet 1 of 2</span>
+  </div>
+</div>
+
+</body></html>
