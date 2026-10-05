@@ -24,7 +24,12 @@ export type ActMetrics = {
   /** How long the act was observed for. */
   durationMs: number;
   /** Which mechanism produced this, so the UI can be honest about it. */
-  source: 'device-sensor' | 'camera' | 'manual';
+  /**
+   * Which mechanism produced the observation. `recovery` is not an observation at
+   * all: it is a day repaired by paying a fee, and it is marked so on-chain so it
+   * can never be counted as a day someone showed up.
+   */
+  source: 'device-sensor' | 'camera' | 'manual' | 'recovery';
 };
 
 export type DayRecord = {

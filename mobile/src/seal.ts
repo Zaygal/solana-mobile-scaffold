@@ -86,7 +86,7 @@ export function decodeSeal(memo: string): SealRecord | null {
   if (prefix !== SEAL_PREFIX) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(roundId)) return null;
   if (act !== 'motion') return null;
-  if (!['device-sensor', 'camera', 'manual'].includes(source)) return null;
+  if (!['device-sensor', 'camera', 'manual', 'recovery'].includes(source)) return null;
   if (!/^\d+$/.test(dur) || !/^\d+$/.test(peak) || !/^\d+$/.test(version)) return null;
   return {
     roundId,
