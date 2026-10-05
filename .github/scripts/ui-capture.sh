@@ -18,12 +18,17 @@ mkdir -p shots
 
 say() { echo "$@" | tee -a "$OUT"; }
 
-# Package name is discovered, not assumed.
-PKG=$($ADB shell pm list packages 2>/dev/null | sed 's/package://' | tr -d '\r' \
-      | grep -iE 'scaffold|clockin' | head -1)
+# Package name is discovered, not assumed, and restricted to THIRD-PARTY
+# packages. The first version filtered the full list on a name pattern and matched
+# com.android.deskclock - the emulator's own clock app, containing 'clock' - then
+# spent the run trying to launch it. System apps are now excluded by the platform
+# rather than by my guessing at names.
+PKGS=$($ADB shell pm list packages -3 2>/dev/null | sed 's/package://' | tr -d '\r')
+say "third-party packages: $(echo "$PKGS" | tr '\n' ' ')"
+PKG=$(echo "$PKGS" | grep -iE 'scaffold|clock' | head -1)
+[ -z "$PKG" ] && PKG=$(echo "$PKGS" | head -1)
 if [ -z "$PKG" ]; then
-  say "could not identify the package; installed packages follow"
-  $ADB shell pm list packages 2>/dev/null | tr -d '\r' | grep -iE 'clock|scaffold|zayg' | head
+  say "no third-party package installed - the APK did not install"
   exit 1
 fi
 say "package: $PKG"
@@ -85,8 +90,13 @@ PY
 }
 
 say "== starting the app =="
-$ADB shell am start -n "$PKG/.MainActivity" >/dev/null 2>&1 || $ADB shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+# monkey resolves the launcher activity itself, so the activity name is never
+# guessed either.
+$ADB shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 12
+if ! $ADB shell pidof "$PKG" >/dev/null 2>&1; then
+  say "the app is not running after launch - nothing to capture"
+fi
 shot 01-launch
 
 # Whatever the first screen offers as its primary action, press it. On a device
