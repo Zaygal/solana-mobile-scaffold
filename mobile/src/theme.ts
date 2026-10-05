@@ -53,6 +53,6 @@ export const type = {
   metric: {
     color: T.paper,
     fontSize: 13,
-    fontVariant: ['tabular-nums'] as const,
+    fontVariant: ['tabular-nums'] as ('tabular-nums')[],
   },
-} as const;
+};

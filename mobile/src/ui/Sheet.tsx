@@ -44,7 +44,14 @@ export default function Sheet({visible, title, onClose, children}: Props) {
 }
 
 const s = StyleSheet.create({
-  scrim: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)'},
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
   sheet: {
     position: 'absolute',
     left: 0,
