@@ -6,9 +6,17 @@
 # ever looked at. This screenshots each step and prints the visible text, so the
 # interface can be judged as an interface rather than read out of the source.
 #
-# Learnings from the Zaycomm harness are applied here rather than rediscovered:
-# match labels case-sensitively as substrings, read the real screen size, print
-# what is on screen when a label is not found, and never swallow a parse error.
+# Learnings carried forward rather than rediscovered:
+#   - match labels case-sensitively as substrings (tab labels render uppercase)
+#   - read the real screen size from the device
+#   - never swallow a parse error
+#   - NEW: uiautomator intermittently declines to write its dump file, typically
+#     while the app is animating. The old version pulled that file with the error
+#     sent to /dev/null, so a MISSING dump and an EMPTY screen looked identical,
+#     and the whole walk died on the first fixable failure. Retry, read with cat,
+#     and print the reason.
+#   - NEW: one failed tap must not abort the remaining screens. The walk used &&
+#     chains, so the first miss produced exactly two screenshots out of seven.
 
 set -u
 ADB="adb -e"
@@ -18,9 +26,6 @@ mkdir -p shots
 
 say() { echo "$@" | tee -a "$OUT"; }
 
-# Install first. The first version of this script downloaded the artifact and went
-# straight to looking for the package, which is why it reported 'the APK did not
-# install' - nothing had tried to install it.
 APK=$(find apk -name '*.apk' 2>/dev/null | head -1)
 [ -z "$APK" ] && APK=$(find . -name '*.apk' 2>/dev/null | head -1)
 if [ -z "$APK" ]; then
@@ -28,16 +33,9 @@ if [ -z "$APK" ]; then
   exit 1
 fi
 say "installing $APK"
-# -g grants the runtime permissions the app declares, so the first screen is not
-# a permission dialog.
 $ADB install -r -g "$APK" >/dev/null 2>&1 || $ADB install -r "$APK" >/dev/null 2>&1
 say "install exit: $?"
 
-# Package name is discovered, not assumed, and restricted to THIRD-PARTY
-# packages. The first version filtered the full list on a name pattern and matched
-# com.android.deskclock - the emulator's own clock app, containing 'clock' - then
-# spent the run trying to launch it. System apps are now excluded by the platform
-# rather than by my guessing at names.
 PKGS=$($ADB shell pm list packages -3 2>/dev/null | sed 's/package://' | tr -d '\r')
 say "third-party packages: $(echo "$PKGS" | tr '\n' ' ')"
 PKG=$(echo "$PKGS" | grep -iE 'scaffold|clock' | head -1)
@@ -48,15 +46,30 @@ if [ -z "$PKG" ]; then
 fi
 say "package: $PKG"
 
-shot() {
-  # Screenshot, and the text that is on it. Both, always - a screenshot alone
-  # cannot be grepped in a log, and a text dump alone cannot show layout.
-  $ADB exec-out screencap -p > "shots/$1.png" 2>/dev/null
-  $ADB shell rm -f /sdcard/d.xml >/dev/null 2>&1
-  $ADB shell uiautomator dump /sdcard/d.xml >/dev/null 2>&1
-  $ADB pull /sdcard/d.xml "dump-$1.xml" >/dev/null 2>&1
-  say "== $1 =="
-  python3 - "dump-$1.xml" <<'PY' 2>/dev/null | tee -a "$OUT"
+# Dump the current UI into $1. Returns non-zero and leaves LASTDUMP explaining
+# itself when the device would not produce one.
+LASTDUMP=""
+grab() {
+  target="$1"
+  LASTDUMP=""
+  for attempt in 1 2 3; do
+    $ADB shell rm -f /sdcard/ui.xml >/dev/null 2>&1
+    LASTDUMP=$($ADB shell uiautomator dump /sdcard/ui.xml 2>&1 | tr -d '\r' | tr '\n' ' ')
+    $ADB shell cat /sdcard/ui.xml > "$target" 2>/dev/null
+    if [ -s "$target" ]; then
+      LASTDUMP=""
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+# Print every visible string on the dump. Truncation was hiding the cause once
+# already: the bottom navigation renders LAST in the tree, so a 700-character cap
+# cut off precisely the labels the walk was searching for.
+visible() {
+  python3 - "$1" <<'PY' 2>&1
 import sys, xml.etree.ElementTree as ET
 try:
     root = ET.parse(sys.argv[1]).getroot()
@@ -67,17 +80,31 @@ for n in root.iter('node'):
     t = (n.get('text') or '').strip() or (n.get('content-desc') or '').strip()
     if t:
         seen.append(t)
-print("   " + " | ".join(dict.fromkeys(seen))[:700])
+seen = list(dict.fromkeys(seen))
+joined = " | ".join(seen)
+print("   nodes=%d strings=%d" % (len(list(root.iter('node'))), len(seen)))
+print("   %s" % joined[:1600])
+if len(joined) > 1600:
+    print("   ...TAIL... %s" % joined[-500:])
 PY
+}
+
+shot() {
+  $ADB exec-out screencap -p > "shots/$1.png" 2>/dev/null
+  say "== $1 =="
+  if grab "dump-$1.xml"; then
+    visible "dump-$1.xml" | tee -a "$OUT"
+  else
+    say "   NO DUMP after 3 attempts. uiautomator said: $LASTDUMP"
+  fi
 }
 
 tap() {
   want="$1"; label="$2"
-  real_h=$($ADB shell wm size 2>/dev/null | sed -n 's/.*: *[0-9]*x\([0-9]*\).*/\1/p' | tr -d '\r')
-  [ -z "$real_h" ] && real_h=2000
-  $ADB shell rm -f /sdcard/t.xml >/dev/null 2>&1
-  $ADB shell uiautomator dump /sdcard/t.xml >/dev/null 2>&1
-  $ADB pull /sdcard/t.xml "dump-tap-$label.xml" >/dev/null 2>&1
+  if ! grab "dump-tap-$label.xml"; then
+    say "  [$label] NO DUMP after 3 attempts: $LASTDUMP"
+    return 1
+  fi
   coords=$(python3 - "dump-tap-$label.xml" "$want" <<'PY' 2>/dev/null
 import sys, re, xml.etree.ElementTree as ET
 path, want = sys.argv[1], sys.argv[2]
@@ -96,7 +123,8 @@ for n in root.iter('node'):
 PY
   )
   if [ -z "$coords" ]; then
-    say "  [$label] no element matching '$want'"
+    say "  [$label] no element matching '$want' - what IS on screen follows"
+    visible "dump-tap-$label.xml" | tee -a "$OUT"
     return 1
   fi
   set -- $coords
@@ -107,30 +135,23 @@ PY
 }
 
 say "== starting the app =="
-# monkey resolves the launcher activity itself, so the activity name is never
-# guessed either.
 $ADB shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 12
-if ! $ADB shell pidof "$PKG" >/dev/null 2>&1; then
-  say "the app is not running after launch - nothing to capture"
-fi
+$ADB shell pidof "$PKG" >/dev/null 2>&1 || say "the app is not running after launch - nothing to capture"
 shot 01-onboarding
 
-# Leave onboarding. Skip is on every panel; the Continue chain is the fallback for
-# a build where Skip is absent. A second run has already been onboarded, so both
-# may report "no element matching" - that is expected, not a failure.
-tap "Skip" "onboarding-skip" || { tap "Continue" "ob-1" && sleep 1 && tap "Continue" "ob-2" && sleep 1 && tap "Get started" "ob-3"; }
+# Leave onboarding. Skip is on every panel; Continue is the fallback. A second run
+# has already been onboarded, so a miss here is expected rather than a failure.
+# Every step below uses ';' not '&&': one miss must not cost the other screens.
+tap "Skip" "onboarding-skip" || { tap "Continue" "ob-1"; sleep 1; tap "Continue" "ob-2"; sleep 1; tap "Get started" "ob-3"; }
 sleep 4
 shot 02-today
 
-# The four destinations. Until now the harness only ever saw screen one, which is
-# why the other three have never been inspected at phone dimensions.
-tap "RECORD" "tab-record" && sleep 3 && shot 03-record
-tap "VERIFY" "tab-verify" && sleep 3 && shot 04-verify
-tap "PROFILE" "tab-profile" && sleep 3 && shot 05-profile
-tap "Show" "diagnostics" && sleep 2 && shot 06-diagnostics
-
-# Back to Today, to catch anything that fails to survive a return trip.
-tap "TODAY" "tab-today" && sleep 3 && shot 07-today-returning
+# The four destinations, each independent of the others' success.
+tap "RECORD" "tab-record"; sleep 3; shot 03-record
+tap "VERIFY" "tab-verify"; sleep 3; shot 04-verify
+tap "PROFILE" "tab-profile"; sleep 3; shot 05-profile
+tap "Show" "diagnostics"; sleep 2; shot 06-diagnostics
+tap "TODAY" "tab-today"; sleep 3; shot 07-today-returning
 
 say "== done =="

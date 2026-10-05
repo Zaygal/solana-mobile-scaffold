@@ -62,7 +62,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: sh "$GITHUB_WORKSPACE/.github/scripts/ui-capture.sh"
 
-      - name: Upload the screenshots
+      # The XML dumps are uploaded too. Without them a failed lookup can only be
+      # guessed at from the log, which is how a missing dump spent a whole run
+      # looking like an empty screen.
+      - name: Upload the screenshots and the UI dumps
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -70,4 +73,5 @@ jobs:
           path: |
             shots/*.png
             capture.txt
+            dump-*.xml
           if-no-files-found: warn
