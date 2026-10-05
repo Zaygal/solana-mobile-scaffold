@@ -3,6 +3,13 @@
          app reads the cluster over RPC, so network access is required. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- The motion layer acknowledges a touch with a short vibration. Without this
+         declaration Vibration.vibrate() throws SecurityException on the vibrator's
+         native thread - which is not catchable from JavaScript - so the process is
+         killed outright. Every tap on the bottom navigation closed the app. This is
+         a normal permission: declaring it is the whole fix, no runtime prompt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Android 11+ package visibility. Linking.canOpenURL only answers for
          applications this app declares an interest in, so wallet detection would
          report every wallet as missing without these listed. -->
