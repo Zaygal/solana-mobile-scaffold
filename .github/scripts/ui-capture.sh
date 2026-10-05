@@ -112,21 +112,23 @@ sleep 12
 if ! $ADB shell pidof "$PKG" >/dev/null 2>&1; then
   say "the app is not running after launch - nothing to capture"
 fi
-shot 01-launch
+shot 01-onboarding
 
-# Whatever the first screen offers as its primary action, press it. On a device
-# with no wallet installed this is where the product either explains itself or
-# dead-ends, which is the thing being measured.
-for label in "Connect Wallet" "Connect wallet" "CONNECT WALLET"; do
-  if tap "$label" "primary"; then break; fi
-done
-sleep 8
-shot 02-after-primary-action
+# Leave onboarding. Skip is on every panel; the Continue chain is the fallback for
+# a build where Skip is absent. A second run has already been onboarded, so both
+# may report "no element matching" - that is expected, not a failure.
+tap "Skip" "onboarding-skip" || { tap "Continue" "ob-1" && sleep 1 && tap "Continue" "ob-2" && sleep 1 && tap "Get started" "ob-3"; }
+sleep 4
+shot 02-today
 
-# Any notice the app puts up after that.
-shot 03-state
+# The four destinations. Until now the harness only ever saw screen one, which is
+# why the other three have never been inspected at phone dimensions.
+tap "Record" "tab-record" && sleep 3 && shot 03-record
+tap "Verify" "tab-verify" && sleep 3 && shot 04-verify
+tap "Profile" "tab-profile" && sleep 3 && shot 05-profile
+tap "Show" "diagnostics" && sleep 2 && shot 06-diagnostics
 
-# The collapsed diagnostics, if present.
-tap "Developer" "diagnostics" && sleep 3 && shot 04-diagnostics
+# Back to Today, to catch anything that fails to survive a return trip.
+tap "Today" "tab-today" && sleep 3 && shot 07-today-returning
 
 say "== done =="
