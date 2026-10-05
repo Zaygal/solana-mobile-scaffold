@@ -253,7 +253,10 @@ export default function App() {
             <Pressable style={s.primary} onPress={onConnect} accessibilityRole="button">
               <Text style={s.primaryText}>Connect Wallet</Text>
             </Pressable>
-            <Text style={s.underPrimary}>Securely connect using Mobile Wallet Adapter</Text>
+            <Text style={s.underPrimary}>
+              Securely connect using Mobile Wallet Adapter. Connect once — after that, only
+              transactions ask for your approval.
+            </Text>
 
             <View style={s.rule} />
             <Text style={s.howTitle}>How it works</Text>
