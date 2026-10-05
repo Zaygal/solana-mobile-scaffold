@@ -74,7 +74,17 @@ export default function Screen({
   );
 }
 
-export const TOP_INSET = Platform.OS === 'android' ? StatusBar.currentHeight ?? 24 : 44;
+/**
+ * The top inset has to clear the system status bar, because the header's title is
+ * drawn at the top of the window and the status bar's clock and notification icons
+ * are painted over it when it does not.
+ *
+ * This uses || and not ??. StatusBar.currentHeight returns 0 on at least one real
+ * device, and ?? only falls through on null or undefined - so 0 passed straight
+ * through, TOP_INSET became 0, and every screen title sat underneath the clock.
+ */
+export const TOP_INSET =
+  Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 44;
 
 const s = StyleSheet.create({
   root: {flex: 1, backgroundColor: T.ink},
