@@ -15,9 +15,22 @@
  */
 
 import React, {useEffect, useRef} from 'react';
-import {Animated, StyleSheet, Text, View} from 'react-native';
+import {Animated, Dimensions, Platform, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {T, type} from '../theme';
 import {DUR, EASE, haptic, useReducedMotion} from '../motion';
+
+/**
+ * The system navigation bar sits on top of the tab bar on a device that draws the
+ * app edge to edge, which is what the capture shows. Without pulling in a native
+ * safe-area dependency two days before submission, the inset is derivable: window
+ * height excludes the system bars, screen height does not.
+ */
+const _win = Dimensions.get('window');
+const _scr = Dimensions.get('screen');
+const BOTTOM_INSET =
+  Platform.OS === 'android'
+    ? Math.max(0, _scr.height - _win.height - (StatusBar.currentHeight ?? 0))
+    : 0;
 
 export type TabKey = 'today' | 'record' | 'verify' | 'profile';
 
@@ -25,7 +38,7 @@ export const TABS: {key: TabKey; label: string; glyph: string}[] = [
   {key: 'today', label: 'Today', glyph: '\u25c9'},
   {key: 'record', label: 'Record', glyph: '\u2630'},
   {key: 'verify', label: 'Verify', glyph: '\u2713'},
-  {key: 'profile', label: 'Profile', glyph: '\u263a'},
+  {key: 'profile', label: 'Profile', glyph: '\u25ef'},
 ];
 
 type Props = {
@@ -120,7 +133,8 @@ export default function BottomNav({active, onChange, badge}: Props) {
 const st = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    height: 62,
+    height: 62 + BOTTOM_INSET,
+    paddingBottom: BOTTOM_INSET,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: T.hairline,
     backgroundColor: T.panel,

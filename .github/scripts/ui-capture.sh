@@ -52,6 +52,7 @@ shot() {
   # Screenshot, and the text that is on it. Both, always - a screenshot alone
   # cannot be grepped in a log, and a text dump alone cannot show layout.
   $ADB exec-out screencap -p > "shots/$1.png" 2>/dev/null
+  $ADB shell rm -f /sdcard/d.xml >/dev/null 2>&1
   $ADB shell uiautomator dump /sdcard/d.xml >/dev/null 2>&1
   $ADB pull /sdcard/d.xml "dump-$1.xml" >/dev/null 2>&1
   say "== $1 =="
@@ -74,6 +75,7 @@ tap() {
   want="$1"; label="$2"
   real_h=$($ADB shell wm size 2>/dev/null | sed -n 's/.*: *[0-9]*x\([0-9]*\).*/\1/p' | tr -d '\r')
   [ -z "$real_h" ] && real_h=2000
+  $ADB shell rm -f /sdcard/t.xml >/dev/null 2>&1
   $ADB shell uiautomator dump /sdcard/t.xml >/dev/null 2>&1
   $ADB pull /sdcard/t.xml "dump-tap-$label.xml" >/dev/null 2>&1
   coords=$(python3 - "dump-tap-$label.xml" "$want" <<'PY' 2>/dev/null
@@ -123,12 +125,12 @@ shot 02-today
 
 # The four destinations. Until now the harness only ever saw screen one, which is
 # why the other three have never been inspected at phone dimensions.
-tap "Record" "tab-record" && sleep 3 && shot 03-record
-tap "Verify" "tab-verify" && sleep 3 && shot 04-verify
-tap "Profile" "tab-profile" && sleep 3 && shot 05-profile
+tap "RECORD" "tab-record" && sleep 3 && shot 03-record
+tap "VERIFY" "tab-verify" && sleep 3 && shot 04-verify
+tap "PROFILE" "tab-profile" && sleep 3 && shot 05-profile
 tap "Show" "diagnostics" && sleep 2 && shot 06-diagnostics
 
 # Back to Today, to catch anything that fails to survive a return trip.
-tap "Today" "tab-today" && sleep 3 && shot 07-today-returning
+tap "TODAY" "tab-today" && sleep 3 && shot 07-today-returning
 
 say "== done =="

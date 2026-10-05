@@ -110,7 +110,7 @@ export default function Streak({length, connected, onPress}: Props) {
   if (!connected) {
     return (
       <View style={s.block}>
-        <Text style={[s.big, {color: T.muted}]}>—</Text>
+        <View style={s.coldVessel} />
         <Text style={s.label}>not connected</Text>
         <View style={s.track} />
         <Text style={s.foot}>Connect a wallet to read the record.</Text>
@@ -149,6 +149,17 @@ export default function Streak({length, connected, onPress}: Props) {
 
 const s = StyleSheet.create({
   block: {marginTop: 22},
+  /** An em dash at 84px read as a grey loading bar. An outlined empty vessel
+   *  reads as waiting, which is what the state actually is. */
+  coldVessel: {
+    width: 48,
+    height: 62,
+    borderWidth: 1.5,
+    borderColor: T.hairline,
+    borderRadius: 8,
+    marginTop: 6,
+    marginBottom: 8,
+  },
   big: {fontSize: 84, fontWeight: '800', letterSpacing: -3, lineHeight: 88},
   label: {...type.section, color: T.paper, marginTop: 2},
   track: {
