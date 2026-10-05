@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'mobile/**'
+      - 'verifier/**'
       - '.github/workflows/apk.yml'
 
 jobs:
@@ -31,6 +32,14 @@ jobs:
       # step is the only thing standing between a typo and a broken recording.
       - name: Typecheck
         run: npm run typecheck
+
+      # The verifier is a first-class deliverable, not a script beside the
+      # project, so its known-answer tests run on every build: strictness of the
+      # decode, streak counting across month and year boundaries, gap reporting,
+      # and the transaction extraction path. It needs no network and no
+      # dependencies, so it cannot flake.
+      - name: Verifier self-test
+        run: node verifier/verify.mjs --self-test
 
       - name: Set up Java
         uses: actions/setup-java@v5
