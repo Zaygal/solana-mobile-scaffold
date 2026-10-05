@@ -30,7 +30,7 @@
 
     <application
         android:name=".MainApplication"
-        android:label="MWA Scaffold"
+        android:label="Clock In"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:allowBackup="false"
@@ -38,7 +38,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
-            android:label="MWA Scaffold"
+            android:label="Clock In"
             android:exported="true"
             android:launchMode="singleTask">
             <intent-filter>
