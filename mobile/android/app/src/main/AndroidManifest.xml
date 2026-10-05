@@ -3,6 +3,24 @@
          app reads the cluster over RPC, so network access is required. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Android 11+ package visibility. Linking.canOpenURL only answers for
+         applications this app declares an interest in, so wallet detection would
+         report every wallet as missing without these listed. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="phantom" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="solflare" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="backpack" />
+        </intent>
+    </queries>
+
     <application
         android:name=".MainApplication"
         android:label="MWA Scaffold"
