@@ -38,8 +38,11 @@ jobs:
       # decode, streak counting across month and year boundaries, gap reporting,
       # and the transaction extraction path. It needs no network and no
       # dependencies, so it cannot flake.
+      # Absolute path on purpose: this job's working directory is mobile/, so a
+      # relative path resolves to mobile/verifier/verify.mjs and CI fails with
+      # "Cannot find module" - which is exactly what it did on the first push.
       - name: Verifier self-test
-        run: node verifier/verify.mjs --self-test
+        run: node "$GITHUB_WORKSPACE/verifier/verify.mjs" --self-test
 
       - name: Set up Java
         uses: actions/setup-java@v5
