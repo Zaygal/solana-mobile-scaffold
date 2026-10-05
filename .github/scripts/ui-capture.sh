@@ -134,6 +134,25 @@ PY
   return 0
 }
 
+# The app re-renders every second - the round countdown ticks - so uiautomator
+# never observes an idle hierarchy and refuses to dump anything after onboarding
+# ("ERROR: could not get idle state"). Measured from the captured screenshot:
+# four fixed columns whose label row sits at y = 0.93 of the screen height, with
+# column centres at 1/8, 3/8, 5/8 and 7/8 of the width. Used only when the text
+# lookup fails, so this stays a fallback rather than the mechanism.
+TAB_Y=0.93
+tap_tab() {
+  col="$1"; label="$2"
+  size=$($ADB shell wm size 2>/dev/null | sed -n 's/.*: *\([0-9]*\)x\([0-9]*\).*/\1 \2/p' | tr -d '\r')
+  set -- $size
+  W=${1:-1080}; H=${2:-2340}
+  X=$(awk "BEGIN{printf \"%d\", $W*$col}")
+  Y=$(awk "BEGIN{printf \"%d\", $H*$TAB_Y}")
+  say "  [$label] no dump available; tapping the tab column at ($X,$Y) of ${W}x${H}"
+  $ADB shell input tap "$X" "$Y"
+  sleep 3
+}
+
 say "== starting the app =="
 $ADB shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
 sleep 12
@@ -147,11 +166,11 @@ tap "Skip" "onboarding-skip" || { tap "Continue" "ob-1"; sleep 1; tap "Continue"
 sleep 4
 shot 02-today
 
-# The four destinations, each independent of the others' success.
-tap "RECORD" "tab-record"; sleep 3; shot 03-record
-tap "VERIFY" "tab-verify"; sleep 3; shot 04-verify
-tap "PROFILE" "tab-profile"; sleep 3; shot 05-profile
-tap "Show" "diagnostics"; sleep 2; shot 06-diagnostics
-tap "TODAY" "tab-today"; sleep 3; shot 07-today-returning
+# The four destinations, each independent of the others' success. Text lookup
+# first; the coordinate fallback covers the case where no dump is obtainable.
+tap "RECORD" "tab-record"  || tap_tab 0.375 "tab-record";  sleep 2; shot 03-record
+tap "VERIFY" "tab-verify"  || tap_tab 0.625 "tab-verify";  sleep 2; shot 04-verify
+tap "PROFILE" "tab-profile" || tap_tab 0.875 "tab-profile"; sleep 2; shot 05-profile
+tap "TODAY" "tab-today"    || tap_tab 0.125 "tab-today";   sleep 2; shot 06-today-returning
 
 say "== done =="
