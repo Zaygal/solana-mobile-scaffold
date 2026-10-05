@@ -117,9 +117,15 @@ for n in root.iter('node'):
     d = (n.get('content-desc') or '').strip()
     if want in t or want in d:
         m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds') or '')
-        if m:
-            x1, y1, x2, y2 = map(int, m.groups())
-            print("%d %d" % ((x1 + x2) // 2, (y1 + y2) // 2))
+        if not m:
+            continue
+        x1, y1, x2, y2 = map(int, m.groups())
+        # React Native's nested Text reports a ZERO-AREA rect while the geometry
+        # lives on a parent that is not exposed either. Accepting such a node
+        # produced a confident tap at (0,0), which is the status bar.
+        if x2 <= x1 or y2 <= y1:
+            continue
+        print("%d %d" % ((x1 + x2) // 2, (y1 + y2) // 2))
 PY
   )
   if [ -z "$coords" ]; then
@@ -140,7 +146,7 @@ PY
 # four fixed columns whose label row sits at y = 0.93 of the screen height, with
 # column centres at 1/8, 3/8, 5/8 and 7/8 of the width. Used only when the text
 # lookup fails, so this stays a fallback rather than the mechanism.
-TAB_Y=0.905
+TAB_Y=0.92
 tap_tab() {
   col="$1"; label="$2"
   size=$($ADB shell wm size 2>/dev/null | sed -n 's/.*: *\([0-9]*\)x\([0-9]*\).*/\1 \2/p' | tr -d '\r')
@@ -168,9 +174,19 @@ shot 02-today
 
 # The four destinations, each independent of the others' success. Text lookup
 # first; the coordinate fallback covers the case where no dump is obtainable.
-tap "RECORD" "tab-record"  || tap_tab 0.375 "tab-record";  sleep 2; shot 03-record
-tap "VERIFY" "tab-verify"  || tap_tab 0.625 "tab-verify";  sleep 2; shot 04-verify
-tap "PROFILE" "tab-profile" || tap_tab 0.875 "tab-profile"; sleep 2; shot 05-profile
-tap "TODAY" "tab-today"    || tap_tab 0.125 "tab-today";   sleep 2; shot 06-today-returning
+alive() {
+  P=$($ADB shell pidof "$PKG" 2>/dev/null | tr -d '\r')
+  if [ -z "$P" ]; then say "   !! the app is GONE after the previous tap"; else say "   app pid: $P"; fi
+}
+
+tap "RECORD" "tab-record"  || tap_tab 0.375 "tab-record";  sleep 2; alive; shot 03-record
+tap "VERIFY" "tab-verify"  || tap_tab 0.625 "tab-verify";  sleep 2; alive; shot 04-verify
+tap "PROFILE" "tab-profile" || tap_tab 0.875 "tab-profile"; sleep 2; alive; shot 05-profile
+tap "TODAY" "tab-today"    || tap_tab 0.125 "tab-today";   sleep 2; alive; shot 06-today-returning
+
+say "== logcat: crashes and fatal errors =="
+$ADB logcat -d > logcat.txt 2>/dev/null
+grep -aiE 'FATAL EXCEPTION|AndroidRuntime|ReactNativeJS.*(Error|Exception)|beginning of crash|libc.*Fatal signal' logcat.txt | head -40 >> "$OUT" 2>/dev/null || echo "   (no fatal lines found)" >> "$OUT"
+wc -l < logcat.txt | sed 's/^/   logcat lines: /' >> "$OUT"
 
 say "== done =="

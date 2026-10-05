@@ -74,4 +74,5 @@ jobs:
             shots/*.png
             capture.txt
             dump-*.xml
+            logcat.txt
           if-no-files-found: warn
