@@ -6,7 +6,7 @@ back out of Solana rather than out of anything this app stored.
 Android, Solana devnet, React Native, and the official Mobile Wallet Adapter.
 Built for the Solana Mobile Clock In hackathon and verified on a physical
 Android 11 device — the installable APK is attached to the
-[v1.0.0 release](../../releases/tag/v1.0.0).
+[v1.0.0 release](https://github.com/Zaygal/solana-mobile-scaffold/releases/tag/v1.0.0).
 
 <img src="deck/shots/02-today.png" width="260" alt="The Today screen, one day sealed">
 
