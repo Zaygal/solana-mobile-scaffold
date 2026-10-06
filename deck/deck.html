@@ -30,6 +30,9 @@
     background: var(--bg);
     padding: 96px 120px;
     display: flex; flex-direction: column;
+    /* Centred, not top-aligned. Top-aligned left the bottom third of every text
+       slide empty, which reads as an unfinished slide rather than a margin. */
+    justify-content: center;
     overflow: hidden;
   }
   .stamp {
@@ -72,7 +75,7 @@
     height: 780px; width: auto; display: block;
   }
   .shots { display: flex; gap: 34px; align-items: flex-end; }
-  .shots img { width: 296px; height: auto; border: 1px solid var(--line); border-radius: 12px; }
+  .shots img { width: 240px; height: auto; border: 1px solid var(--line); border-radius: 12px; }
   .shots figcaption { font-size: 21px; color: #55606c; text-align: center; margin-top: 14px; }
   .center { justify-content: center; }
   .grow { flex: 1; }
@@ -185,12 +188,10 @@ earliest         2026-10-05 06:05:59 UTC</pre>
 <section class="slide">
   <div class="stamp">User experience</div>
   <h2 style="margin-bottom:30px;">An app, not a website in a shell</h2>
-  <div class="say" style="margin-bottom:44px;">
+  <div class="say" style="margin-bottom:40px;">
     Four destinations — Today, Record, Verify, Profile — with the wallet as an
     <b style="color:var(--ink)">action</b> rather than a gate. Onboarding that does not block.
-    Sheets for tasks, a stack for detail. Marks drawn rather than typed, because Unicode's
-    list glyph is a hamburger menu and its circle is an unselected radio button. The
-    hardware back key unwinds to Today instead of closing the application.
+    The hardware back key unwinds to Today instead of closing the application.
   </div>
   <div class="shots">
     <figure><img src="shots/02-today.png" alt=""><figcaption>TODAY</figcaption></figure>
