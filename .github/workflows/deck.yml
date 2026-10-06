@@ -1,0 +1,59 @@
+name: deck
+
+# Renders the pitch deck (deck/deck.html) to 10 PNGs and one PDF, and uploads them
+# as an artifact.
+#
+# On a runner rather than locally: the deck is 1920x1080 and needs a real Chromium
+# to lay it out, and none of that belongs on a small local machine. The render also
+# reads every PNG's own header back and fails if a slide is not 1920x1080, because a
+# screenshot call that returns without throwing is not evidence the image is right.
+
+on:
+  push:
+    paths:
+      - 'deck/**'
+      - '.github/workflows/deck.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deck
+
+jobs:
+  render:
+    name: render the deck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The deck names DejaVu by family. Without it Chromium substitutes and the
+      # line breaks move, which is the sort of thing only visible by looking.
+      - name: fonts
+        run: sudo apt-get update -qq && sudo apt-get install -y fonts-dejavu-core
+
+      - name: playwright and chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+
+      - name: render
+        run: node deck/render.mjs
+
+      - name: list what came out
+        run: |
+          ls -l out/
+          file out/*.png | head -12
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clock-in-deck
+          path: out/
+          if-no-files-found: error

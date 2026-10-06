@@ -6,3 +6,5 @@ android/app/build/
 *.keystore
 .DS_Store
 *.log
+out/
+package-lock.json
