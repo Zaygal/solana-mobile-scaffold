@@ -1,0 +1,71 @@
+CLOCK IN — NARRATION TO READ
+================================================================
+
+Read straight through, in order. Do NOT try to match the video while
+you record — I place each line in the edit using the pauses.
+
+Between lines: about 1.5 seconds of silence. That gap is how I know
+where one line ends.
+
+If you fluff a line: pause, then read that whole line again from the
+start. I take the better take.
+
+Room quiet, phone about 20 cm away, no fan, no notification sounds.
+
+
+LINE 1
+----------------------------------------------------------------
+This is Clock In. One round a day, and the streak you are looking at
+was not stored by this app.
+
+        [ pause ]
+
+LINE 2
+----------------------------------------------------------------
+Here is the whole act. Ten seconds, held. There is no camera, no
+sensor and no witness — and the app says so on its own limits screen.
+
+        [ pause ]
+
+LINE 3
+----------------------------------------------------------------
+Sealing writes one signed transaction to Solana devnet. It is a
+commitment record. Nothing here holds your funds and nothing here can
+move them.
+
+        [ pause ]
+
+LINE 4
+----------------------------------------------------------------
+Now delete the app's storage. It has nothing left. Run a script with
+no dependencies against the same wallet — and the same days come back,
+because they were never in the app.
+
+        [ pause ]
+
+LINE 5
+----------------------------------------------------------------
+What it cannot prove is that a body held a button. The record says
+that plainly. That is the point of it.
+
+        [ end ]
+
+
+================================================================
+NOTES
+
+Total speech is about 130 words — roughly 1:30 with the pauses. That
+is deliberate. The film is mostly real time: the ten-second hold and
+the wallet's own approval take as long as they take. Do not pad it.
+
+Line 4 references a step your footage does not contain yet: clearing
+the app's storage on camera, then the verifier returning the same
+days. That beat is the strongest thing in the film — "the app
+forgetting and the chain remembering". Read the line, and shoot the
+wipe clip separately (about 30 seconds). I produce the verifier half.
+
+Read these exactly as written. They are worded to be true: nothing
+here claims a sensor, a witness, or custody of funds.
+
+If any line is read by a synthetic voice instead of yours, it is
+labelled on screen. That is a rule of this project, not a preference.
