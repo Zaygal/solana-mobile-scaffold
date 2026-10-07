@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clock In - verifiable habit records on Solana</title>
+<meta name="description" content="One round a day, sealed with your wallet. The streak is recomputed from Solana, never stored in the app.">
+<style>
+:root{--bg:#0E1116;--fg:#F2F5F7;--dim:#8FA3B5;--acc:#3DDC97;--line:#1F2733}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:56px 24px 80px}
+img.logo{width:132px;height:132px;display:block;margin:0 0 28px;border-radius:22px}
+h1{font-size:40px;line-height:1.15;margin:0 0 14px;letter-spacing:-.02em}
+p.lede{font-size:20px;color:var(--dim);margin:0 0 40px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);
+ margin:44px 0 14px;font-weight:600}
+ul{padding-left:22px;margin:0}
+li{margin:7px 0}
+a.btn{display:inline-block;margin:6px 10px 6px 0;padding:12px 20px;border:1px solid var(--line);
+ border-radius:10px;color:var(--fg);text-decoration:none;font-weight:600;font-size:15px}
+a.btn:hover{border-color:var(--acc)}
+a.btn.primary{background:var(--acc);color:#08130D;border-color:var(--acc)}
+hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+code{background:#161C25;padding:2px 7px;border-radius:5px;font-size:14px;color:var(--acc)}
+.note{color:var(--dim);font-size:15px}
+footer{margin-top:52px;color:var(--dim);font-size:14px}
+</style></head><body><div class="wrap">
+
+<img class="logo" src="logo.png" alt="Clock In">
+<h1>One round a day. Sealed with your wallet.</h1>
+<p class="lede">An app that keeps your streak can fake it. Clock In turns it into a record:
+the streak is recomputed from Solana on every launch, and there is no local state to lie about.</p>
+
+<a class="btn primary" href="https://github.com/Zaygal/solana-mobile-scaffold/releases/tag/v1.0.0">Download the APK</a>
+<a class="btn" href="https://github.com/Zaygal/solana-mobile-scaffold">Source on GitHub</a>
+
+<h2>How it works</h2>
+<ul>
+<li>One round a day costs a ten-second hold.</li>
+<li>That round is sealed as a signed Solana <strong>devnet</strong> transaction from your own wallet.</li>
+<li>The record is a versioned, positionally-decoded memo &mdash; date, act, measured hold, sample interval, attestation method.</li>
+<li>The streak is recomputed by reading that wallet's on-chain history. Nothing is trusted from local storage.</li>
+<li>A dependency-free verifier (377 lines, no dependencies) rechecks any record on your own machine.</li>
+</ul>
+
+<h2>Why a memo, not a transfer</h2>
+<p>A token amount would make your record depend on that token continuing to exist. A memo is
+readable from the transaction alone, forever, by anyone &mdash; and this app never holds funds.</p>
+
+<h2>What it does not prove</h2>
+<p class="note">The ten-second hold is self-reported: no camera, no sensor, no witness. The app says
+so on its own limits screen rather than leaving it for you to discover. It is not a fitness tracker.</p>
+
+<hr>
+<p class="note"><strong>Status:</strong> devnet only. Zero users, zero revenue. Built for Android on the
+official Mobile Wallet Adapter, with bare React Native (no Expo). Eligibility is gated on the
+Seeker Genesis Token, not the device model &mdash; an emulator and a Seeker run identical code.</p>
+
+<footer>Clock In &middot; <a href="https://x.com/ZaygalX1" style="color:var(--dim)">@ZaygalX1</a></footer>
+</div></body></html>
