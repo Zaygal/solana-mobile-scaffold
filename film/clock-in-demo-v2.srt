@@ -1,23 +1,19 @@
 1
-00:00:00,000 --> 00:00:08,000
-Clock In records one round a day directly on Solana.
+00:00:01,000 --> 00:00:13,500
+One round a day. The streak is read back from Solana, not from the app.
 
 2
-00:00:08,000 --> 00:00:26,000
-The round qualifies after a ten-second hold.
+00:00:14,500 --> 00:00:33,500
+No camera, no sensor, no witness - and the app says so on its own limits screen.
 
 3
-00:00:26,000 --> 00:00:41,800
-Sealing asks the wallet to approve a real devnet transaction.
+00:00:34,500 --> 00:00:53,000
+A real devnet transaction. A commitment record, not an escrow - nothing here holds funds.
 
 4
-00:00:41,800 --> 00:00:49,800
-The record is a signed memo, not an escrow or transfer.
+00:00:54,000 --> 00:01:11,000
+This verifier reads the same record from the chain alone. It never reads the app.
 
 5
-00:00:49,800 --> 00:01:05,800
-The streak can be checked independently from the chain.
-
-6
-00:01:05,800 --> 00:01:13,800
-The important limit: the physical action is self-reported.
+00:01:12,000 --> 00:01:27,000
+The attestation is self-reported. The record says so on its own screen.
