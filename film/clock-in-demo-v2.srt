@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:08,000
+Clock In records one round a day directly on Solana.
+
+2
+00:00:08,000 --> 00:00:26,000
+The round qualifies after a ten-second hold.
+
+3
+00:00:26,000 --> 00:00:41,800
+Sealing asks the wallet to approve a real devnet transaction.
+
+4
+00:00:41,800 --> 00:00:49,800
+The record is a signed memo, not an escrow or transfer.
+
+5
+00:00:49,800 --> 00:01:05,800
+The streak can be checked independently from the chain.
+
+6
+00:01:05,800 --> 00:01:13,800
+The important limit: the physical action is self-reported.
