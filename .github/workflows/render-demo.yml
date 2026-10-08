@@ -29,7 +29,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add film/clock-in-demo-v2.mp4 film/clock-in-demo-v2.srt
+          git add film/clock-in-demo-v2.mp4 film/clock-in-demo-v2-captioned.mp4 film/clock-in-demo-v2.srt
           git diff --cached --quiet && exit 0
-          git commit -m "Create Clock In demo v2"
+          git commit -m "Create Clock In director cut"
           git push
