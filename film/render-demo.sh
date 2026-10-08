@@ -3,83 +3,50 @@ set -euo pipefail
 
 SRC="film/clock-in-demo.mp4"
 OUT="film/clock-in-demo-v2.mp4"
+BURNED="film/clock-in-demo-v2-captioned.mp4"
 SRT="film/clock-in-demo-v2.srt"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
 
-# The existing film README documents these exact raw-capture windows:
-# Today 84-98, hold 96-116, seal/wallet 152.2-168, sealed state 186-194,
-# verifier 54-70, limits 195-203.
-#
-# We deliberately use the real recorded footage from those windows. No UI is
-# generated or simulated. The edit is muted because the raw capture audio is
-# not the narration track; the new sidecar captions carry the story.
-
-ffmpeg -hide_banner -loglevel error -y -i "$SRC" \
-  -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" \
-  -an -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p "$WORK/full.mp4"
-
-# Extract real source windows, then add a restrained evidence label.
-ffmpeg -hide_banner -loglevel error -y -ss 84 -t 8 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='CLOCK IN  /  TODAY':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/01.mp4"
-
-ffmpeg -hide_banner -loglevel error -y -ss 96 -t 18 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE ACT  /  10 SECOND HOLD':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/02.mp4"
-
-ffmpeg -hide_banner -loglevel error -y -ss 152.2 -t 15.8 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='SEAL  /  MOBILE WALLET ADAPTER':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/03.mp4"
-
-ffmpeg -hide_banner -loglevel error -y -ss 186 -t 8 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='ON CHAIN  /  SIGNED RECORD':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/04.mp4"
-
-ffmpeg -hide_banner -loglevel error -y -ss 54 -t 16 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='INDEPENDENT CHECK  /  VERIFIER':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/05.mp4"
-
-ffmpeg -hide_banner -loglevel error -y -ss 195 -t 8 -i "$WORK/full.mp4" \
-  -vf "drawbox=x=48:y=44:w=1824:h=992:color=white@0.16:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='LIMITS  /  SELF-REPORTED ACTION':fontcolor=white:fontsize=34:x=76:y=72:borderw=2:bordercolor=black@0.45" \
-  -an -c:v libx264 -preset veryfast -crf 18 "$WORK/06.mp4"
-
-cat > "$WORK/list.txt" <<EOF
-file '$WORK/01.mp4'
-file '$WORK/02.mp4'
-file '$WORK/03.mp4'
-file '$WORK/04.mp4'
-file '$WORK/05.mp4'
-file '$WORK/06.mp4'
-EOF
-
-ffmpeg -hide_banner -loglevel error -y -f concat -safe 0 -i "$WORK/list.txt" \
-  -c:v libx264 -preset medium -crf 17 -pix_fmt yuv420p -movflags +faststart "$OUT"
+# The existing Clock In film is already the real 1:28 product recording. Its
+# README documents the five beats and the evidence used in each. This v2 is a
+# director's cut of that real film: no generated UI, no synthetic wallet screen,
+# no invented transaction. We keep the original audio and footage and add only
+# restrained beat labels and a clean captioned export.
 
 cat > "$SRT" <<'EOF'
 1
-00:00:00,000 --> 00:00:08,000
-Clock In records one round a day directly on Solana.
+00:00:01,000 --> 00:00:13,500
+One round a day. The streak is read back from Solana, not from the app.
 
 2
-00:00:08,000 --> 00:00:26,000
-The round qualifies after a ten-second hold.
+00:00:14,500 --> 00:00:33,500
+No camera, no sensor, no witness - and the app says so on its own limits screen.
 
 3
-00:00:26,000 --> 00:00:41,800
-Sealing asks the wallet to approve a real devnet transaction.
+00:00:34,500 --> 00:00:53,000
+A real devnet transaction. A commitment record, not an escrow - nothing here holds funds.
 
 4
-00:00:41,800 --> 00:00:49,800
-The record is a signed memo, not an escrow or transfer.
+00:00:54,000 --> 00:01:11,000
+This verifier reads the same record from the chain alone. It never reads the app.
 
 5
-00:00:49,800 --> 00:01:05,800
-The streak can be checked independently from the chain.
-
-6
-00:01:05,800 --> 00:01:13,800
-The important limit: the physical action is self-reported.
+00:01:12,000 --> 00:01:27,000
+The attestation is self-reported. The record says so on its own screen.
 EOF
 
-ffprobe -v error -show_entries format=duration:stream=width,height,codec_name -of default=noprint_wrappers=1 "$OUT"
+LABELS="drawbox=x=28:y=28:w=1864:h=1024:color=white@0.14:t=2,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='DEVNET':fontcolor=white@0.78:fontsize=24:x=1810:y=62:borderw=2:bordercolor=black@0.35,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE CLAIM':fontcolor=white:fontsize=30:x=62:y=58:borderw=2:bordercolor=black@0.45:enable='between(t,0,14.5)',drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE ACT':fontcolor=white:fontsize=30:x=62:y=58:borderw=2:bordercolor=black@0.45:enable='between(t,14.5,34.5)',drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE SEAL':fontcolor=white:fontsize=30:x=62:y=58:borderw=2:bordercolor=black@0.45:enable='between(t,34.5,54)',drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE VERIFIER':fontcolor=white:fontsize=30:x=62:y=58:borderw=2:bordercolor=black@0.45:enable='between(t,54,72)',drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='THE LIMITS':fontcolor=white:fontsize=30:x=62:y=58:borderw=2:bordercolor=black@0.45:enable='between(t,72,88)'"
+
+ffmpeg -hide_banner -loglevel error -y -i "$SRC" \
+  -vf "$LABELS" \
+  -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k \
+  -movflags +faststart "$OUT"
+
+ffmpeg -hide_banner -loglevel error -y -i "$OUT" \
+  -vf "subtitles=$SRT:force_style='FontName=DejaVu Sans,FontSize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=64'" \
+  -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a copy \
+  -movflags +faststart "$BURNED"
+
+echo "=== clean ==="
+ffprobe -v error -show_entries format=duration:stream=codec_name,width,height -of default=noprint_wrappers=1 "$OUT"
+echo "=== captioned ==="
+ffprobe -v error -show_entries format=duration:stream=codec_name,width,height -of default=noprint_wrappers=1 "$BURNED"
