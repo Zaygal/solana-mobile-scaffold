@@ -1,0 +1,9 @@
+# Consolidate the identities under which commits were written in this repository.
+# Commits were authored by the automation that operates this account on Hassan's behalf.
+# The canonical identity for every contribution is Zaygal <dosunmuh070@gmail.com>.
+#
+# This file only changes how git and GitHub attribute existing commits. It does not
+# rewrite history, and no commit hash is altered.
+Zaygal <dosunmuh070@gmail.com> <agent@hermes>
+Zaygal <dosunmuh070@gmail.com> <agent@local>
+Zaygal <dosunmuh070@gmail.com> <root@vps3658302.trouble-free.net>
